@@ -4,6 +4,7 @@ namespace CNESIntegration\Services;
 
 use CNESIntegration\Repositories\ProfissionalRepository;
 use MapasCulturais\App;
+use MapasCulturais\Entities\Agent;
 
 class ProfissionalService 
 {
@@ -11,14 +12,15 @@ class ProfissionalService
     {
         $app = App::i();
 
-        $user = $app->repo('User')->find(8);
+        $userAdmin = $app->repo('User')->find(8);
+        $userCnes = $app->repo('User')->find(2);
 
-        $app->user = $user;
-        $app->auth->authenticatedUser = $user;
+        $app->user = $userAdmin;
+        $app->auth->authenticatedUser = $userAdmin;
 
 
         $filter = [
-            'CNS' => 980016297407245
+            'CNS' => 706600584508210
         ];
 
         /**
@@ -32,6 +34,7 @@ class ProfissionalService
             $cns = (int) $profissional->CNS;
             $cbo = $profissional->CBO . ' - ' . $profissional->{'DESCRICAO CBO'};
             $cnes = $profissional->CNES;
+            $nome = $profissional->NOME;
             
             // busca no banco do mapa se o CNS está cadastrado, ou seja, se o profissional já foi migrado anteriomente
             $agentMeta = $app->repo('AgentMeta')->findOneBy(['value' => $cns]);
@@ -42,7 +45,12 @@ class ProfissionalService
 
                 // retorna as relações com espaços do agente
                 $conn = $app->em->getConnection();
-                $relations = $conn->fetchAll("SELECT * FROM agent_relation WHERE agent_id = {$agent->id} AND object_type = 'MapasCulturais\Entities\Space'");
+                $relations = $conn->fetchAll("
+                    SELECT * FROM agent_relation 
+                    WHERE agent_id = {$agent->id} 
+                    AND object_type = 'MapasCulturais\Entities\Space'
+                    AND type LIKE '%{$profissional->CBO}%'
+                ");
                 foreach ($relations as $relation) {
                     // realiza a limpeza dos relacionamentos dos agentes com os espaços
                     $relation_ = $app->repo('AgentRelation')->find($relation['id']);
@@ -50,7 +58,15 @@ class ProfissionalService
                 }
            
                 // Busca o espaço para adicionar um novo relation com o agent
-                $spaceMeta = $app->repo('SpaceMeta')->findOneBy(['value' => $cnes]);
+                // $spaceMeta = $app->repo('SpaceMeta')->findOneBy(['value' => $cnes]);
+                $query = $app->em->createQuery("SELECT s FROM MapasCulturais\Entities\SpaceMeta s WHERE s.value LIKE :value");
+
+                $query->setParameters([
+                    "value" => "%{$cnes}%"
+                ]);
+
+                $spaceMeta = $query->getOneOrNullResult();
+
                 if ($spaceMeta) {
                     $space = $spaceMeta->owner;
 
@@ -61,14 +77,21 @@ class ProfissionalService
                 }
             } else {
                 // TODO: se não existir o agente, então deve existir a rotina de cadastro do profissional
-                echo 'NÃO Existe cns no mapa, deve INSERIR: ' . $cns . '<br>';
+                $agent = new \MapasCulturais\Entities\Agent;
+                $agent->user = $userCnes;
+                $agent->_type = 1;
+                $agent->name = $nome;
+                $agent->shortDescription = "CNS: {$cns}";
+                $agent->setMetadata('cns', $cns);
+                $agent->save(true);
+
             }
             
 
             /**
              * executa apenas 1 vez dentro do foreach
              */
-            if ($i++ == 1) {
+            if ($i++ == 10) {
                 die;
             }
         } 
