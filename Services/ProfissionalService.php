@@ -9,6 +9,22 @@ use MapasCulturais\Entities\Agent;
 
 class ProfissionalService
 {
+    private function unique_multidim_array($array, $key) {
+        $temp_array = array();
+        $i = 0;
+        $key_array = array();
+
+        foreach($array as $value) {
+            $val = (array) $value;
+            if (!in_array($val[$key], $key_array)) {
+                $key_array[$i] = $val[$key];
+                $temp_array[$i] = $val;
+            }
+            $i++;
+        }
+        return $temp_array;
+    }
+
     public function atualizaProfissionais()
     {
         $app = App::i();
@@ -23,16 +39,21 @@ class ProfissionalService
         $filter = [
             //'CNS' => 700507591592556
         ];
+        $options = ['limit' => 500];
 
         /**
          * retorna dados do mongodb
          */
         $ProfissionalRepository = new ProfissionalRepository();
-        $profissionais = $ProfissionalRepository->getProfissionais($filter);
+        $profissionais = $ProfissionalRepository->getProfissionais($filter, $options);
         $i = 1;
-        foreach ($profissionais as $profissional) {
-            $cns = (int) $profissional->CNS;
-            $cnes = $profissional->CNES;
+
+        $profi = $profissionais->toArray();
+        $unicos = $this->unique_multidim_array($profi, 'CNS');
+
+        foreach ($unicos as $profissional) {
+            $cns = (int) $profissional['CNS'];
+            $cnes = $profissional['CNES'];
 
             $spaceRepository = new SpaceRepository();
             $spaceMeta = $spaceRepository->getSpacesMetaByCNES($cnes);
@@ -61,16 +82,16 @@ class ProfissionalService
                     // realiza a limpeza dos relacionamentos dos agentes com os espaços
                     $relation_ = $app->repo('AgentRelation')->find($relation['id']);
                     $relation_->delete(true);
-                    echo "Removendo vinculos do agente {$agent->id}<br>";
+                    $app->log->debug("Removendo vinculos do agente {$agent->id}");
                 }
             }
 
-            if ($i++ == 50) {
+            if ($i++ == 500) {
                 break;
             }
         }
 
-        echo '<hr><hr><br>';
+        $app->log->debug(PHP_EOL.PHP_EOL);
 
         $i = 1;
         $profissionais_ = $ProfissionalRepository->getProfissionais($filter);
@@ -95,7 +116,7 @@ class ProfissionalService
 
                 // adiciona o relacionamento do espaço com o agente retornado do mongodb, concatenando com o CBO (id do cbo + descrição do cbo)
                 $space->createAgentRelation($agent, $cbo);
-                echo "Add vinculo existente do agent {$agent->id} e vinculando ao espaço {$space->id} com CBO: {$cbo}<br>";
+                $app->log->debug("Add vinculo existente do agent {$agent->id} e vinculando ao espaço {$space->id} com CBO: {$cbo}" . PHP_EOL);
 
             } else {
                 // TODO: se não existir o agente, então deve existir a rotina de cadastro do profissional
@@ -111,14 +132,14 @@ class ProfissionalService
 
                 // adiciona o relacionamento do espaço com o agente retornado do mongodb, concatenando com o CBO (id do cbo + descrição do cbo)
                 $space->createAgentRelation($agent, $cbo);
-                echo "Add vinculo do novo agent {$agent->id} e vinculando ao espaço {$space->id} com CBO: {$cbo}<br>";
+                $app->log->debug("Add vinculo do novo agent {$agent->id} e vinculando ao espaço {$space->id} com CBO: {$cbo}<br>" . PHP_EOL);
             }
             
 
             /**
              * executa apenas 1 vez dentro do foreach
              */
-            if ($i++ == 50) {
+            if ($i++ == 5000) {
                 break;
             }
         } 
