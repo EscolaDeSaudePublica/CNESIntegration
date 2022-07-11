@@ -2,6 +2,8 @@
 
 namespace CNESIntegration;
 
+ini_set('MAX_EXECUTION_TIME', '-1');
+
 use MapasCulturais\App;
 use MapasCulturais\i;
 
