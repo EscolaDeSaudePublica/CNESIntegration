@@ -15,6 +15,7 @@ class SpaceRepository extends Repository
         $query->setParameters([
             "value" => "%{$cnes}%"
         ]);
+        $query->setMaxResults(1);
 
         return $query->getOneOrNullResult();
     }
