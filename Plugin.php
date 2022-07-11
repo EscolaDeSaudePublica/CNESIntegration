@@ -3,6 +3,7 @@
 namespace CNESIntegration;
 
 use MapasCulturais\App;
+use MapasCulturais\i;
 
 class Plugin extends \MapasCulturais\Plugin 
 {
@@ -15,5 +16,10 @@ class Plugin extends \MapasCulturais\Plugin
     {
         $app = App::i();
         $app->registerController('cnes-integration', Controllers\CNESIntegration::class);
+
+        $this->registerAgentMetadata('cns', [
+            'label' => i::__('CNS'),
+            'type' => 'string'
+        ]);
     }
 }
