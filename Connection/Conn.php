@@ -21,8 +21,8 @@ class Conn
 	        $conn = new PDO($dns, $username, $password, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
             $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-            if ($conn) {
-                echo "Connected to the dw database successfully!";
+            if (!$conn) {
+                echo "NOT Connected to the dw database successfully!";
             }
 
             return $conn;
