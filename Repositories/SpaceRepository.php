@@ -5,18 +5,32 @@ namespace CNESIntegration\Repositories;
 use CNESIntegration\Connection\Conn;
 use MapasCulturais\App;
 
-class SpaceRepository extends Repository
+class SpaceRepository
 {
-    public function getSpacesMetaByCNES($cnes)
-    {
-        $app = App::i();
-        // Busca o espaço para adicionar um novo relation com o agent
-        $query = $app->em->createQuery("SELECT s FROM MapasCulturais\Entities\SpaceMeta s WHERE s.value LIKE :value");
-        $query->setParameters([
-            "value" => "%{$cnes}%"
-        ]);
-        $query->setMaxResults(1);
 
-        return $query->getOneOrNullResult();
+    public function getEstabelecimentosByCNES($cnes)
+    {
+        $connection = Conn::getConnection();
+        $sql = "SELECT * FROM estabelecimentos WHERE co_cnes=?";
+
+        $sth = $connection->prepare($sql );
+        $sth->execute([$cnes]);
+        $result = $sth->fetch(\PDO::FETCH_ASSOC);
+
+        return $result;
+    }
+
+    public function getAllEstabelecimentos()
+    {
+        $connection = Conn::getConnection();
+        $sql = "SELECT distinct competencia, co_cnes, no_razao_social, no_logradouro, nu_endereco, no_complemento, no_bairro, co_cep, dt_atualizacao, 
+        nu_latitude, nu_longitude, tp_unidade, description, atende_sus, co_municipio_gestor, municipio, nu_telefone 
+        FROM estabelecimentos WHERE co_cnes='2497654'";
+
+        $sth = $connection->prepare($sql);
+        $sth->execute();
+        $result = $sth->fetchAll(\PDO::FETCH_ASSOC);
+
+        return $result;
     }
 }

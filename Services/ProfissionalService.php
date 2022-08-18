@@ -25,10 +25,12 @@ class ProfissionalService
         $profissionalRepository = new ProfissionalRepository();
         $cnsS = $profissionalRepository->getAllCnsDistinctProfissionais();
 
-       // $cnsS = [980016287995799];
-        $i = 0;
+        //print_r($cnsS[0]['cns']);
+
+        // $cnsS = [980016287995799];
+        //$i = 0;
         foreach ($cnsS as $cns) {
-            $cns = (int) $cns;
+            $cns = (int) $cns['cns'];
 
             // busca no banco do mapa se o CNS está cadastrado, ou seja, se o profissional já foi migrado anteriomente
             $agentMeta = $app->repo('AgentMeta')->findOneBy(['value' => $cns]);
@@ -55,23 +57,21 @@ class ProfissionalService
                 }
             }
 
-            $app->log->debug(PHP_EOL.PHP_EOL);
+            $app->log->debug(PHP_EOL . PHP_EOL);
 
-            $filter = ['CNS' => $cns];
-            $vinculos = $profissionalRepository->getVinculos($filter);
+            $vinculos = $profissionalRepository->getVinculos($cns);
             foreach ($vinculos as $vinculo_) {
+                $cns = (int) $vinculo_['cns'];
+                $cbo = $vinculo_['cbo']. ' - ' . $vinculo_['descricao_cbo'];
+                $cnes = $vinculo_['cnes'];
+                $nome = $vinculo_['nome'];
 
-                $cns = (int) $vinculo_->CNS;
-                $cbo = $vinculo_->CBO . ' - ' . $vinculo_->{'DESCRICAO CBO'};
-                $cnes = $vinculo_->CNES;
-                $nome = $vinculo_->NOME;
-
-                $metadata = (array)$vinculo_;
-                unset($metadata['SEXO']);
-                unset($metadata['CNPJ']);
+                // $metadata = (array)$vinculo_;
+                unset($vinculo_['sexo']);
+                unset($vinculo_['cnpj']);
 
                 $spaceRepository = new SpaceRepository();
-                $spaceMeta = $spaceRepository->getSpacesMetaByCNES($cnes);
+                $spaceMeta = $spaceRepository->getSpacesMetaByMapa($cnes);
 
                 if ($spaceMeta) {
                     $space = $spaceMeta->owner;
@@ -82,12 +82,12 @@ class ProfissionalService
 
                     $agent = $agentMeta->owner;
 
-                    // adiciona o relacionamento do espaço com o agente retornado do mongodb, concatenando com o CBO (id do cbo + descrição do cbo)
+                    // adiciona o relacionamento do espaço com o agente retornado do banco cnes,, concatenando com o CBO (id do cbo + descrição do cbo)
                     $spaceAgentRelation = new \MapasCulturais\Entities\SpaceAgentRelation();
                     $spaceAgentRelation->owner = $space;
                     $spaceAgentRelation->agent = $agent;
                     $spaceAgentRelation->group = $cbo;
-                    $spaceAgentRelation->metadata = json_encode($metadata);
+                    $spaceAgentRelation->metadata = json_encode($vinculo_);
                     $spaceAgentRelation->save(true);
 
                     $msg = "Add vinculo existente do agent {$agent->id} e vinculando ao espaço {$space->id} com CBO: {$cbo}" . PHP_EOL . '<br>';
@@ -104,13 +104,13 @@ class ProfissionalService
                     $agent->save(true);
                     echo "Novo agente {$agent->id}";
 
-                    // adiciona o relacionamento do espaço com o agente retornado do mongodb, concatenando com o CBO (id do cbo + descrição do cbo)
+                    // adiciona o relacionamento do espaço com o agente retornado do banco cnes, concatenando com o CBO (id do cbo + descrição do cbo)
                     //$space->createAgentRelation($agent, $cbo);
                     $spaceAgentRelation = new \MapasCulturais\Entities\SpaceAgentRelation;
                     $spaceAgentRelation->owner = $space;
                     $spaceAgentRelation->agent = $agent;
                     $spaceAgentRelation->group = $cbo;
-                    $spaceAgentRelation->metadata = json_encode($metadata);
+                    $spaceAgentRelation->metadata = json_encode($vinculo_);
                     $spaceAgentRelation->save(true);
 
                     $msg = "Add vinculo do novo agent {$agent->id} e vinculando ao espaço {$space->id} com CBO: {$cbo}<br>" . PHP_EOL . '<br>';
@@ -119,9 +119,9 @@ class ProfissionalService
                 }
             }
 
-            if ($i++ == 5000) {
-                die;
-            }
+            // if ($i++ == 5000) {
+            //     die;
+            // }
         }
     }
 }

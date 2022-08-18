@@ -4,28 +4,30 @@ namespace CNESIntegration\Repositories;
 
 use CNESIntegration\Connection\Conn;
 
-class ProfissionalRepository extends Repository
+class ProfissionalRepository
 {
-    public function getVinculos($filter = [], $options = [])
+    public function getVinculos($filter)
     {
-        $manager = Conn::getManager();
-        $query = new \MongoDB\Driver\Query($filter, $options);
+        $connection = Conn::getConnection();
+        $sql = "SELECT * FROM cnesprofissionais WHERE cns=?";
 
-        $result = $manager->executeQuery($this->database .'.'. $this->collection, $query);
+        $sth = $connection->prepare($sql );
+        $sth->execute([$filter]);
+        $result = $sth->fetchAll(\PDO::FETCH_ASSOC);
 
         return $result;
     }
 
     public function getAllCnsDistinctProfissionais()
     {
-        $manager = Conn::getManager();
+        $connection = Conn::getConnection();
+        $sql = "SELECT DISTINCT cns FROM cnesprofissionais";
 
-        $command = new \MongoDB\Driver\Command([
-            'distinct' => $this->collection,
-            'key' => 'CNS'
-        ]);
+        $sth = $connection->prepare($sql);
+        $sth->execute();
+        $result = $sth->fetchAll();
 
-        $cursor = $manager->executeCommand($this->database, $command);
-        return current($cursor->toArray())->values;
+        return $result;
     }
+
 }
