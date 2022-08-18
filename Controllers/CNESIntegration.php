@@ -1,6 +1,5 @@
 <?php
 
-
 namespace CNESIntegration\Controllers;
 
 ini_set('display_errors', true);
@@ -18,6 +17,10 @@ class CNESIntegration extends \MapasCulturais\Controller
 
         // $profissionalService = new ProfissionalService();
         // $profissionalService->atualizaProfissionais();
+    }
+
+    public function GET_estabelecimentos()
+    {
         $spaceService = new SpaceService();
         $spaceService->atualizarSpaces();
     }

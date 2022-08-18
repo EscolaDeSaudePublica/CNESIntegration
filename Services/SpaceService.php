@@ -5,6 +5,7 @@ namespace CNESIntegration\Services;
 use CNESIntegration\Repositories\SpaceRepository;
 use MapasCulturais\App;
 use MapasCulturais\Types\GeoPoint;
+
 class SpaceService
 {
 
@@ -22,94 +23,112 @@ class SpaceService
 
         $spaceRepository = new SpaceRepository();
         // retorna uma lista com todos os cnes da base do CNES
-        $cnes = $spaceRepository->getAllEstabelecimentos();
-        
-        foreach ($cnes as $cnes_) 
-        {
-            // retorna todos os dados da view estabelecimentos de um determinado cnes 
-            // $resultCnes = $spaceRepository->getEstabelecimentosByCNES(2497654);
-            $spaceMeta = $app->repo('SpaceMeta')->findOneBy(['value' => $cnes_['co_cnes']]);
-            
-            if ($spaceMeta) {
+        $estabelecimentos = $spaceRepository->getAllEstabelecimentos();
 
-                try {
-                    $nomeFantasia = $cnes_["no_razao_social"]; 
-                    $location = '(' . $cnes_["nu_longitude"] . ', ' . $cnes_["nu_latitude"] . ')';
-                    $geo = new GeoPoint($cnes_["nu_latitude"], $cnes_["nu_longitude"]);
-                    if ($cnes_["nu_longitude"] == null || $cnes_["nu_longitude"] == 'nan') {
-                        $geo = new GeoPoint(0, 0);
-                    }
-                   
-    
-                    $codigoCnes = $cnes_["co_cnes"];
-                    $dataAtualizacao = $cnes_["dt_atualizacao"];
-                    $tipoUnidade = $cnes_['description'];
-    
-                    $telefone = 'Não informado';
-                    if (@isset($cnes_["nu_telefone"])) {
-                        $telefone = $cnes_["nu_telefone"];
-                    }
-
-                    $percenteAoSus = $cnes_['atende_sus'];    
-                    //$servicos = $cnes_["ds_servico_especializado"];
-                   
-                    $conn = $app->em->getConnection();
-                    $idTipo = $this->retornaIdTipoEstabelecimentoPorNome($conn, $tipoUnidade);
-                    if ($idTipo == null || $idTipo == '') {
-                        echo $tipoUnidade . PHP_EOL;
-                    }
-                    
-                    $data = date('Y-m-d H:i:s');
-                    $idAgenteResponsavel = 8; 
-                    
-                    
-                    $space = $spaceMeta->owner;
-                    //$space->location = $location;
-                    //$space->_geo_location = $geo ;
-                    $space->setLocation($geo);
-                    
-                    $space->name = 'aaaaa';
-                    $space->short_description = $nomeFantasia;
-                    $space->long_description = $nomeFantasia;
-                    $space->create_timestamp = $data;
-                    $space->status = 1;
-                    $space->is_verified = 'FALSE';
-                    $space->public = 'FALSE';
-                    $space->agent_id = $idAgenteResponsavel;
-                    $space->type = $idTipo;
-                   
-                    //$space->setMetadata('teste', 'teste');
-                    $space->save(true);
+        foreach ($estabelecimentos as $estabelecimento) {
+            // retorna todos os dados da view estabelecimentos de um determinado cnes
+            $spaceMeta = $app->repo('SpaceMeta')->findOneBy(['value' => $estabelecimento['co_cnes']]);
 
 
-                    // if (isset($servicos)) {
-                                                   
-                    //     $servicosString = $this->adicionarAcentos($servicos);
-    
-                    //     $space->setMetadata('instituicao_servicos', $servicosString);
-                    // }
-                    
-                    // $space->setMetadata( 'En_CEP', $cnes_["co_cep"]); 
-                    // $space->setMetadata('En_Nome_Logradouro', $resultCnes["no_logradouro"]);
-                    // $space->setMetadata('En_Num', $resultCnes["nu_endereco"]);
-                    // $space->setMetadata('En_Bairro', $resultCnes["no_bairro"]);
-                    // $space->setMetadata('En_Municipio', $resultCnes["municipio"]);
-                    // $space->setMetadata('En_Estado', 'CE');
-                    // $space->setMetadata('instituicao_cnes', $resultCnes["co_cnes"]);
-                    // $space->setMetadata('instituicao_cnes_data_atualizacao', $dataAtualizacao);
-                    // $space->setMetadata('instituicao_cnes_competencia', date('m/Y'));
-                    // $space->setMetadata('instituicao_tipos_unidades', $this->adicionarAcentos($tipoUnidade));
-                    // $space->setMetadata('telefonePublico', $resultCnes["nu_telefone"]);
-                    // $space->setMetadata('instituicao_pertence_sus', $percenteAoSus);
-    
-                    // $this->salvarSelos($conn, $idSpace, $idAgenteResponsavel);
-    
-    
-                } catch (Exception $e) {
-                    print_r($e);
-                    continue;
+            if ($estabelecimento["nu_longitude"] == null || $estabelecimento["nu_longitude"] == 'nan') {
+                $geo = new GeoPoint(0, 0);
+            } else {
+                $geo = new GeoPoint($estabelecimento["nu_longitude"], $estabelecimento["nu_latitude"]);
+            }
+
+            $nomeFantasia = $estabelecimento["no_fantasia"];
+            $tipoUnidade = $estabelecimento['description'];
+            $telefone = $estabelecimento["nu_telefone"];
+            $percenteAoSus = $estabelecimento['atende_sus'];
+
+
+            $cep = $estabelecimento['co_cep'];
+            $logradouro = $estabelecimento['no_logradouro'];
+            $numero = $estabelecimento['nu_endereco'];
+            $bairro = $estabelecimento['no_bairro'];
+            $municipio = $estabelecimento['municipio'];
+            $cnes = $estabelecimento['co_cnes'];
+            $now = date('Y-m-d H:i:s');
+
+
+            $competencia = substr_replace($estabelecimento['competencia'], '-', -2,-2);
+            $competenciaArray = explode('-', $competencia);
+            $competenciaData = $competenciaArray[1] . '/' . $competenciaArray[0];
+
+            $servicosEstabelecimento = $spaceRepository->getServicosPorEstabelecimento($cnes);
+
+            $servicosArray = [];
+            foreach ($servicosEstabelecimento as $serv) {
+                if (!empty($serv['ds_servico_especializado']) && $serv['ds_servico_especializado'] != 'nen') {
+                    $servicosArray[] = $serv['ds_servico_especializado'];
                 }
-                echo "atualizado";
+            }
+
+            //$servicos = $cnes_["ds_servico_especializado"];
+
+            if ($spaceMeta) {
+                $idAgenteResponsavel = 8;
+
+                $space = $spaceMeta->owner;
+                $space->setLocation($geo);
+                $space->name = $nomeFantasia;
+                $space->short_description = 'CNES: ' . $cnes;
+                $space->create_timestamp = $now;
+                $space->status = 1;
+                $space->is_verified = false;
+                $space->public = false;
+                $space->agent_id = $idAgenteResponsavel;
+                $space->type = $this->retornaIdTipoEstabelecimentoPorNome($tipoUnidade);
+
+                if (!empty($cep)) {
+                    $space->setMetadata('En_CEP', $cep);
+                }
+
+                if (!empty($logradouro)) {
+                    $space->setMetadata('En_Nome_Logradouro', $logradouro);
+                }
+
+                if (!empty($numero)) {
+                    $space->setMetadata('En_Num', $numero);
+                }
+
+                if (!empty($bairro)) {
+                    $space->setMetadata('En_Bairro', $bairro);
+                }
+
+                if (!empty($municipio)) {
+                    $space->setMetadata('En_Municipio', $municipio);
+                }
+                $space->setMetadata('En_Estado', 'CE');
+
+                if (!empty($cnes)) {
+                    $space->setMetadata('instituicao_cnes', $cnes);
+                }
+
+                $space->setMetadata('instituicao_cnes_data_atualizacao', $now);
+
+                if (!empty($competenciaData)) {
+                    $space->setMetadata('instituicao_cnes_competencia', $competenciaData);
+                }
+
+                if (!empty($tipoUnidade)) {
+                    $space->setMetadata('instituicao_tipos_unidades', $tipoUnidade);
+                }
+
+                if (!empty($telefone)) {
+                    $space->setMetadata('telefonePublico', $telefone);
+                }
+
+                if (!empty($percenteAoSus) && $percenteAoSus != 'nan') {
+                    $space->setMetadata('instituicao_pertence_sus', $percenteAoSus);
+                }
+
+                if (is_array($servicosArray)) {
+                    $space->setMetadata('instituicao_servicos', implode(', ', $servicosArray));
+                }
+
+                $space->save(true);
+
             }
 
         }
@@ -142,12 +161,14 @@ class SpaceService
         $conMap->exec($sqlInsertSeal);
     }
 
-    private function retornaIdTipoEstabelecimentoPorNome($conMap, $tipoNome)
+    private function retornaIdTipoEstabelecimentoPorNome($tipoNome)
     {
+        $app = App::i();
+        $conn = $app->em->getConnection();
         $tipoNome = $this->adicionarAcentos($tipoNome);
 
         $sql = "SELECT id FROM public.term WHERE taxonomy='instituicao_tipos_unidades' AND term='{$tipoNome}'";
-        $result = $conMap->query($sql);
+        $result = $conn->query($sql);
         $id = $result->fetchColumn();
         return $id;
     }
