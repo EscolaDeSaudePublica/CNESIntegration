@@ -29,7 +29,6 @@ class SpaceService
             // retorna todos os dados da view estabelecimentos de um determinado cnes
             $spaceMeta = $app->repo('SpaceMeta')->findOneBy(['value' => $estabelecimento['co_cnes']]);
 
-
             if ($estabelecimento["nu_longitude"] == null || $estabelecimento["nu_longitude"] == 'nan') {
                 $geo = new GeoPoint(0, 0);
             } else {
@@ -37,6 +36,7 @@ class SpaceService
             }
 
             $nomeFantasia = $estabelecimento["no_fantasia"];
+            $razaoSocial =  $estabelecimento["no_razao_social"];
             $tipoUnidade = $estabelecimento['description'];
             $telefone = $estabelecimento["nu_telefone"];
             $percenteAoSus = $estabelecimento['atende_sus'];
@@ -49,9 +49,10 @@ class SpaceService
             $municipio = $estabelecimento['municipio'];
             $cnes = $estabelecimento['co_cnes'];
             $now = date('Y-m-d H:i:s');
+            $dateTime = new \DateTime($now); 
+        
 
-
-            $competencia = substr_replace($estabelecimento['competencia'], '-', -2,-2);
+            $competencia = substr_replace($estabelecimento['competencia'], '-', -2, -2);
             $competenciaArray = explode('-', $competencia);
             $competenciaData = $competenciaArray[1] . '/' . $competenciaArray[0];
 
@@ -59,7 +60,7 @@ class SpaceService
 
             $servicosArray = [];
             foreach ($servicosEstabelecimento as $serv) {
-                if (!empty($serv['ds_servico_especializado']) && $serv['ds_servico_especializado'] != 'nen') {
+                if (!empty($serv['ds_servico_especializado']) && $serv['ds_servico_especializado'] != 'nan') {
                     $servicosArray[] = $serv['ds_servico_especializado'];
                 }
             }
@@ -67,72 +68,72 @@ class SpaceService
             //$servicos = $cnes_["ds_servico_especializado"];
 
             if ($spaceMeta) {
-                $idAgenteResponsavel = 8;
-
                 $space = $spaceMeta->owner;
-                $space->setLocation($geo);
-                $space->name = $nomeFantasia;
-                $space->short_description = 'CNES: ' . $cnes;
-                $space->create_timestamp = $now;
-                $space->status = 1;
-                $space->is_verified = false;
-                $space->public = false;
-                $space->agent_id = $idAgenteResponsavel;
-                $space->type = $this->retornaIdTipoEstabelecimentoPorNome($tipoUnidade);
-
-                if (!empty($cep)) {
-                    $space->setMetadata('En_CEP', $cep);
-                }
-
-                if (!empty($logradouro)) {
-                    $space->setMetadata('En_Nome_Logradouro', $logradouro);
-                }
-
-                if (!empty($numero)) {
-                    $space->setMetadata('En_Num', $numero);
-                }
-
-                if (!empty($bairro)) {
-                    $space->setMetadata('En_Bairro', $bairro);
-                }
-
-                if (!empty($municipio)) {
-                    $space->setMetadata('En_Municipio', $municipio);
-                }
-                $space->setMetadata('En_Estado', 'CE');
-
-                if (!empty($cnes)) {
-                    $space->setMetadata('instituicao_cnes', $cnes);
-                }
-
-                $space->setMetadata('instituicao_cnes_data_atualizacao', $now);
-
-                if (!empty($competenciaData)) {
-                    $space->setMetadata('instituicao_cnes_competencia', $competenciaData);
-                }
-
-                if (!empty($tipoUnidade)) {
-                    $space->setMetadata('instituicao_tipos_unidades', $tipoUnidade);
-                }
-
-                if (!empty($telefone)) {
-                    $space->setMetadata('telefonePublico', $telefone);
-                }
-
-                if (!empty($percenteAoSus) && $percenteAoSus != 'nan') {
-                    $space->setMetadata('instituicao_pertence_sus', $percenteAoSus);
-                }
-
-                if (is_array($servicosArray)) {
-                    $space->setMetadata('instituicao_servicos', implode(', ', $servicosArray));
-                }
-
-                $space->save(true);
-
+            } else {
+                $space = new \MapasCulturais\Entities\Space;
             }
 
+            $idAgenteResponsavel = 8;
+            $space->setLocation($geo);
+            $space->name = $nomeFantasia;
+            $space->shortDescription = 'CNES: ' . $cnes;
+            $space->longDescription = $razaoSocial;
+            $space->createTimestamp = $dateTime;
+            $space->status = 1;
+            // $space->is_verified = false;
+            // $space->public = false;
+            $space->agent_id = $idAgenteResponsavel;
+            $space->type = $this->retornaIdTipoEstabelecimentoPorNome($tipoUnidade);
+
+            if (!empty($cep)) {
+                $space->setMetadata('En_CEP', $cep);
+            }
+
+            if (!empty($logradouro)) {
+                $space->setMetadata('En_Nome_Logradouro', $logradouro);
+            }
+
+            if (!empty($numero)) {
+                $space->setMetadata('En_Num', $numero);
+            }
+
+            if (!empty($bairro)) {
+                $space->setMetadata('En_Bairro', $bairro);
+            }
+
+            if (!empty($municipio)) {
+                $space->setMetadata('En_Municipio', $municipio);
+            }
+            $space->setMetadata('En_Estado', 'CE');
+
+            if (!empty($cnes)) {
+                $space->setMetadata('instituicao_cnes', $cnes);
+            }
+
+            $space->setMetadata('instituicao_cnes_data_atualizacao', $now);
+
+            if (!empty($competenciaData)) {
+                $space->setMetadata('instituicao_cnes_competencia', $competenciaData);
+            }
+
+            if (!empty($tipoUnidade)) {
+                $space->setMetadata('instituicao_tipos_unidades', $tipoUnidade);
+            }
+
+            if (!empty($telefone)) {
+                $space->setMetadata('telefonePublico', $telefone);
+            }
+
+            if (!empty($percenteAoSus) && $percenteAoSus != 'nan') {
+                $space->setMetadata('instituicao_pertence_sus', $percenteAoSus);
+            }
+
+            if (is_array($servicosArray)) {
+                $space->setMetadata('instituicao_servicos', implode(', ', $servicosArray));
+            }
+
+            $space->save(true);
         }
-        
     }
 
     private function adicionarAcentos($frase)
