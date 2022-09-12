@@ -3,6 +3,7 @@
 namespace CNESIntegration\Controllers;
 
 ini_set('display_errors', true);
+ini_set('max_execution_time', -1);
 error_reporting(E_ALL);
 
 use CNESIntegration\Connection\Conn;
@@ -13,10 +14,10 @@ class CNESIntegration extends \MapasCulturais\Controller
 {
     public function GET_profissionais()
     {
-        //Conn::getConnection();
+        Conn::getConnection();
 
-        // $profissionalService = new ProfissionalService();
-        // $profissionalService->atualizaProfissionais();
+        $profissionalService = new ProfissionalService();
+        $profissionalService->atualizaProfissionais();
     }
 
     public function GET_estabelecimentos()

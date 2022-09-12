@@ -70,8 +70,10 @@ class ProfissionalService
                 unset($vinculo_['sexo']);
                 unset($vinculo_['cnpj']);
 
-                $spaceRepository = new SpaceRepository();
-                $spaceMeta = $spaceRepository->getSpacesMetaByMapa($cnes);
+                //$spaceRepository = new SpaceRepository();
+                //$spaceMeta = $spaceRepository->getSpacesMetaByMapa($cnes);
+                $spaceMeta = $app->repo('SpaceMeta')->findOneBy(['value' => $cnes]);
+                
 
                 if ($spaceMeta) {
                     $space = $spaceMeta->owner;
@@ -119,9 +121,6 @@ class ProfissionalService
                 }
             }
 
-            // if ($i++ == 5000) {
-            //     die;
-            // }
         }
     }
 }

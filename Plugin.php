@@ -24,7 +24,16 @@ class Plugin extends \MapasCulturais\Plugin
         $app = App::i();
         $app->registerController('cnes-integration', Controllers\CNESIntegration::class);
 
+        $this->registerMetadataProfissionais();
         $this->registerMetadataEstabelecimentos();
+    }
+
+    private function registerMetadataProfissionais()
+    {
+        $this->registerAgentMetadata('cns', [
+            'label' => i::__('CNS'),
+            'type' => 'string',
+        ]);
     }
 
     private function registerMetadataEstabelecimentos()

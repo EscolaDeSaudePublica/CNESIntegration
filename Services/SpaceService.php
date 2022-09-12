@@ -12,27 +12,33 @@ class SpaceService
     public function atualizarSpaces()
     {
         ini_set('display_errors', true);
+        ini_set('max_execution_time', 0);
+        set_time_limit(6000);
         error_reporting(E_ALL);
 
         $app = App::i();
 
         $userAdmin = $app->repo('User')->find(8);
+        $agent2 = $app->repo('Agent')->find(2);
 
         $app->user = $userAdmin;
         $app->auth->authenticatedUser = $userAdmin;
+
+        $app->em->getConnection()->getConfiguration()->setSQLLogger(null);
 
         $spaceRepository = new SpaceRepository();
         // retorna uma lista com todos os cnes da base do CNES
         $estabelecimentos = $spaceRepository->getAllEstabelecimentos();
 
+        $cont = 1;
         foreach ($estabelecimentos as $estabelecimento) {
             // retorna todos os dados da view estabelecimentos de um determinado cnes
             $spaceMeta = $app->repo('SpaceMeta')->findOneBy(['value' => $estabelecimento['co_cnes']]);
 
             if ($estabelecimento["nu_longitude"] == null || $estabelecimento["nu_longitude"] == 'nan') {
-                $geo = new GeoPoint(0, 0);
+                $geo = new GeoPoint(0.0, 0.0);
             } else {
-                $geo = new GeoPoint($estabelecimento["nu_longitude"], $estabelecimento["nu_latitude"]);
+                $geo = new GeoPoint(str_replace(",",".",$estabelecimento["nu_longitude"]), str_replace(",",".",$estabelecimento["nu_latitude"]));
             }
 
             $nomeFantasia = $estabelecimento["no_fantasia"];
@@ -41,7 +47,6 @@ class SpaceService
             $telefone = $estabelecimento["nu_telefone"];
             $percenteAoSus = $estabelecimento['atende_sus'];
 
-
             $cep = $estabelecimento['co_cep'];
             $logradouro = $estabelecimento['no_logradouro'];
             $numero = $estabelecimento['nu_endereco'];
@@ -49,8 +54,7 @@ class SpaceService
             $municipio = $estabelecimento['municipio'];
             $cnes = $estabelecimento['co_cnes'];
             $now = date('Y-m-d H:i:s');
-            $dateTime = new \DateTime($now); 
-        
+            $dateTime = new \DateTime($now);
 
             $competencia = substr_replace($estabelecimento['competencia'], '-', -2, -2);
             $competenciaArray = explode('-', $competencia);
@@ -65,25 +69,35 @@ class SpaceService
                 }
             }
 
-            //$servicos = $cnes_["ds_servico_especializado"];
-
-            if ($spaceMeta) {
-                $space = $spaceMeta->owner;
-            } else {
-                $space = new \MapasCulturais\Entities\Space;
+            $tipoUnidadeComAcento = $this->adicionarAcentos($tipoUnidade);
+            $term = $app->repo('Term')->findOneBy(['term' => $tipoUnidadeComAcento]);
+            if (empty($term)) {
+                $term = new \MapasCulturais\Entities\Term;
+                $term->taxonomy = 'instituicao_tipos_unidades';
+                $term->term = $tipoUnidadeComAcento;
+                $term->save(true);
             }
 
-            $idAgenteResponsavel = 8;
+            if ($spaceMeta) {
+                echo "Autalizado dados do espaços com CNES ".$cnes."</br>";
+                $space = $spaceMeta->owner;
+            } else {
+                echo "Criado um novo espaço com CNES ".$cnes."</br>";
+                $space = new \MapasCulturais\Entities\Space;
+            }
+            
+            
             $space->setLocation($geo);
             $space->name = $nomeFantasia;
             $space->shortDescription = 'CNES: ' . $cnes;
             $space->longDescription = $razaoSocial;
             $space->createTimestamp = $dateTime;
             $space->status = 1;
-            // $space->is_verified = false;
-            // $space->public = false;
-            $space->agent_id = $idAgenteResponsavel;
+            $space->ownerId = 2;
+            $space->is_verified = false;
+            $space->public = false;
             $space->type = $this->retornaIdTipoEstabelecimentoPorNome($tipoUnidade);
+
 
             if (!empty($cep)) {
                 $space->setMetadata('En_CEP', $cep);
@@ -132,15 +146,25 @@ class SpaceService
                 $space->setMetadata('instituicao_servicos', implode(', ', $servicosArray));
             }
 
-            $space->save(true);
+
+            
+            if (($cont % 50) === 0) {
+                $space->save(true); // Executes all updates.
+                $app->em->clear(); // Detaches all objects from Doctrine!
+                echo "Dados salvos com sucesso! </br>";
+            }
+            $space->save();
+            $cont++;   
         }
+        $space->save(true);
+        $app->em->clear();
     }
 
     private function adicionarAcentos($frase)
     {
-        $arrayComAcento = ['ORGÃOS', 'CAPTAÇÃO', 'NOTIFICAÇÃO', 'PÚBLICA', 'LABORATÓRIO', 'GESTÃO', 'ATENÇÃO', 'BÁSICA', 'DOENÇA', 'CRÔNICA', 'FAMÍLIA',  'ESTRATÉGIA', 'COMUNITÁRIOS', 'LOGÍSTICA',  'IMUNOBIOLÓGICOS', 'REGULAÇÃO', 'AÇÕES', 'SERVIÇOS', 'SERVIÇO', 'HANSENÍASE', 'MÓVEL', 'URGÊNCIAS', 'DIAGNÓSTICO', 'LABORATÓRIO', 'CLÍNICO', 'DISPENSAÇÃO', 'ÓRTESES', 'PRÓTESES', 'REABILITAÇÃO', 'PRÁTICAS', 'URGÊNCIA', 'EMERGÊNCIA', 'VIGILÂNCIA', 'BIOLÓGICOS', 'FARMÁCIA', 'GRÁFICOS', 'DINÂMICOS', 'MÉTODOS', 'PATOLÓGICA', 'INTERMEDIÁRIOS', 'TORÁCICA', 'PRÉ-NATAL', 'IMUNIZAÇÃO', 'CONSULTÓRIO', 'VIOLÊNCIA', 'SITUAÇÃO', 'POPULAÇÕES', 'INDÍGENAS', 'ASSISTÊNCIA', 'COMISSÕES', 'COMITÊS', 'SAÚDE', 'BÁSICA'];
+        $arrayComAcento = ['ORGÃOS', 'CAPTAÇÃO', 'NOTIFICAÇÃO', 'PÚBLICA', 'LABORATÓRIO', 'GESTÃO', 'ATENÇÃO', 'BÁSICA', 'DOENÇA', 'CRÔNICA', 'FAMÍLIA',  'ESTRATÉGIA', 'COMUNITÁRIOS', 'LOGÍSTICA',  'IMUNOBIOLÓGICOS', 'REGULAÇÃO', 'AÇÕES', 'SERVIÇOS', 'SERVIÇO', 'HANSENÍASE', 'MÓVEL', 'URGÊNCIAS', 'DIAGNÓSTICO', 'LABORATÓRIO', 'CLÍNICO', 'DISPENSAÇÃO', 'ÓRTESES', 'PRÓTESES', 'REABILITAÇÃO', 'PRÁTICAS', 'URGÊNCIA', 'EMERGÊNCIA', 'VIGILÂNCIA', 'BIOLÓGICOS', 'FARMÁCIA', 'GRÁFICOS', 'DINÂMICOS', 'MÉTODOS', 'PATOLÓGICA', 'INTERMEDIÁRIOS', 'TORÁCICA', 'PRÉ-NATAL', 'IMUNIZAÇÃO', 'CONSULTÓRIO', 'VIOLÊNCIA', 'SITUAÇÃO', 'POPULAÇÕES', 'INDÍGENAS', 'ASSISTÊNCIA', 'COMISSÕES', 'COMITÊS', 'SAÚDE', 'BÁSICA', 'ÁREA', 'PRÉ-HOSPITALAR', 'NÍVEL'];
 
-        $arraySemAcento = ['ORGAOS', 'CAPTACAO', 'NOTIFICACAO', 'PUBLICA', 'LABORATORIO', 'GESTAO', 'ATENCAO', 'BASICA', 'DOENCA', 'CRONICA', 'FAMILIA', 'ESTRATEGIA', 'COMUNITARIOS', 'LOGISTICA',  'IMUNOBIOLOGICOS', 'REGULACAO', 'ACOES', 'SERVICOS', 'SERVICO', 'HANSENIASE', 'MOVEL', 'URGENCIAS', 'DIAGNOSTICO', 'LABORATORIO', 'CLINICO', 'DISPENSACAO', 'ORTESES', 'PROTESES', 'REABILITACAO', 'PRATICAS', 'URGENCIA', 'EMERGENCIA', 'VIGILANCIA', 'BIOLOGICOS', 'FARMACIA', 'GRAFICOS', 'DINAMICOS', 'METODOS', 'PATOLOGICA', 'INTERMEDIARIOS', 'TORACICA', 'PRE-NATAL', 'IMUNIZACAO', 'CONSULTORIO', 'VIOLENCIA', 'SITUACAO', 'POPULACOES', 'INDIGENAS', 'ASSISTENCIA', 'COMISSOES', 'COMITES', 'SAUDE', 'BASICA'];
+        $arraySemAcento = ['ORGAOS', 'CAPTACAO', 'NOTIFICACAO', 'PUBLICA', 'LABORATORIO', 'GESTAO', 'ATENCAO', 'BASICA', 'DOENCA', 'CRONICA', 'FAMILIA', 'ESTRATEGIA', 'COMUNITARIOS', 'LOGISTICA',  'IMUNOBIOLOGICOS', 'REGULACAO', 'ACOES', 'SERVICOS', 'SERVICO', 'HANSENIASE', 'MOVEL', 'URGENCIAS', 'DIAGNOSTICO', 'LABORATORIO', 'CLINICO', 'DISPENSACAO', 'ORTESES', 'PROTESES', 'REABILITACAO', 'PRATICAS', 'URGENCIA', 'EMERGENCIA', 'VIGILANCIA', 'BIOLOGICOS', 'FARMACIA', 'GRAFICOS', 'DINAMICOS', 'METODOS', 'PATOLOGICA', 'INTERMEDIARIOS', 'TORACICA', 'PRE-NATAL', 'IMUNIZACAO', 'CONSULTORIO', 'VIOLENCIA', 'SITUACAO', 'POPULACOES', 'INDIGENAS', 'ASSISTENCIA', 'COMISSOES', 'COMITES', 'SAUDE', 'BASICA', 'AREA', 'PRE-HOSPITALAR', 'NIVEL'];
 
         return str_replace($arraySemAcento, $arrayComAcento, $frase);
     }
