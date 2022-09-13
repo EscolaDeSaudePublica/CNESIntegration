@@ -79,10 +79,14 @@ class SpaceService
             }
 
             if ($spaceMeta) {
-                echo "Autalizado dados do espaços com CNES ".$cnes."</br>";
+                $msg = "Autalizado dados do espaços com o CNES  {$cnes} <br>";
+                $app->log->debug($msg);
+                echo $msg;
                 $space = $spaceMeta->owner;
             } else {
-                echo "Criado um novo espaço com CNES ".$cnes."</br>";
+                $msg = "Criado um novo espaço com o CNES  {$cnes} <br>";
+                $app->log->debug($msg);
+                echo $msg;
                 $space = new \MapasCulturais\Entities\Space;
             }
             
@@ -151,7 +155,9 @@ class SpaceService
             if (($cont % 50) === 0) {
                 $space->save(true); // Executes all updates.
                 $app->em->clear(); // Detaches all objects from Doctrine!
-                echo "Dados salvos com sucesso! </br>";
+                $msg = "Dados salvos com sucesso! Id: {$space->owner} - CNES: {$cnes} <br>";
+                $app->log->debug($msg);
+                echo $msg;
             }
             $space->save();
             $cont++;   
