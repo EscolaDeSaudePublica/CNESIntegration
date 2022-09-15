@@ -13,7 +13,7 @@ class SpaceService
     {
         ini_set('display_errors', true);
         ini_set('max_execution_time', 0);
-        set_time_limit(6000);
+        set_time_limit(60000);
         error_reporting(E_ALL);
 
         $app = App::i();
@@ -24,7 +24,7 @@ class SpaceService
         $app->user = $userAdmin;
         $app->auth->authenticatedUser = $userAdmin;
 
-        $app->em->getConnection()->getConfiguration()->setSQLLogger(null);
+        //$app->em->getConnection()->getConfiguration()->setSQLLogger(null);
 
         $spaceRepository = new SpaceRepository();
         // retorna uma lista com todos os cnes da base do CNES
@@ -149,18 +149,16 @@ class SpaceService
             if (is_array($servicosArray)) {
                 $space->setMetadata('instituicao_servicos', implode(', ', $servicosArray));
             }
-
-
             
-            if (($cont % 50) === 0) {
+            $space->save();       
+            if (($cont % 20) === 0) {
                 $space->save(true); // Executes all updates.
                 $app->em->clear(); // Detaches all objects from Doctrine!
-                $msg = "Dados salvos com sucesso! Id: {$space->owner} - CNES: {$cnes} <br>";
+                $msg = "Dados salvos com sucesso!";
                 $app->log->debug($msg);
-                echo $msg;
-            }
-            $space->save();
-            $cont++;   
+                echo $msg; 
+            }    
+            $cont++;
         }
         $space->save(true);
         $app->em->clear();
