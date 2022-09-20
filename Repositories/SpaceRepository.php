@@ -16,7 +16,8 @@ class SpaceRepository
         $sth = $connection->prepare($sql );
         $sth->execute([$cnes]);
         $result = $sth->fetch(\PDO::FETCH_ASSOC);
-
+        $sth = null;
+        $connection = null;
         return $result;
     }
 
@@ -30,7 +31,8 @@ class SpaceRepository
         $sth = $connection->prepare($sql);
         $sth->execute();
         $result = $sth->fetchAll(\PDO::FETCH_ASSOC);
-
+        $sth = null;
+        $connection = null;
         return $result;
     }
 
@@ -44,7 +46,8 @@ class SpaceRepository
             ":cnes" => $cnes
         ]);
         $result = $sth->fetchAll(\PDO::FETCH_ASSOC);
-
+        $sth = null;
+        $connection = null;
         return $result;
     }
 }

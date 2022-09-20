@@ -9,6 +9,8 @@ error_reporting(E_ALL);
 use CNESIntegration\Connection\Conn;
 use CNESIntegration\Services\ProfissionalService;
 use CNESIntegration\Services\SpaceService;
+use MapasCulturais\App;
+use MapasCulturais\Exceptions\PermissionDenied;
 
 class CNESIntegration extends \MapasCulturais\Controller
 {
@@ -21,8 +23,17 @@ class CNESIntegration extends \MapasCulturais\Controller
     }
 
     public function GET_estabelecimentos()
-    {
-        $spaceService = new SpaceService();
-        $spaceService->atualizarSpaces();
+    {     
+        $app = App::i();
+
+        if ($app->user->is('guest')) $app->auth->requireAuthentication();
+
+        if ($app->user->email == 'desenvolvimento@esp.ce.gov.br'){
+            $spaceService = new SpaceService();
+            $spaceService->atualizarSpaces();
+        } else {
+            throw new PermissionDenied($app->user, $this, '@control');
+        }
+        
     }
 }
