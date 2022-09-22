@@ -8,7 +8,7 @@ class ProfissionalRepository
 {
     public function getVinculos($filter)
     {
-        $connection = Conn::getConnection();
+        $connection = Conn::getInstance();
         $sql = "SELECT * FROM cnesprofissionais WHERE cns=?";
 
         $sth = $connection->prepare($sql );
@@ -20,7 +20,7 @@ class ProfissionalRepository
 
     public function getAllCnsDistinctProfissionais()
     {
-        $connection = Conn::getConnection();
+        $connection = Conn::getInstance();
         $sql = "SELECT DISTINCT cns FROM cnesprofissionais";
 
         $sth = $connection->prepare($sql);

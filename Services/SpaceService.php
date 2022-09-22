@@ -13,7 +13,7 @@ class SpaceService
     {
         ini_set('display_errors', true);
         ini_set('max_execution_time', 0);
-        set_time_limit(6000);
+        set_time_limit(60000);
         error_reporting(E_ALL);
 
         $app = App::i();
@@ -153,7 +153,7 @@ class SpaceService
             if (($cont % 50) === 0) {
                 $space->save(true); // Executes all updates.
                 $app->em->clear(); // Detaches all objects from Doctrine!
-                $msg = "Dados salvos com sucesso! Id: {$space->owner} - CNES: {$cnes} <br>";
+                $msg = "Dados salvos com sucesso ! - ¨¨\_(* _ *)_/¨¨";
                 $app->log->debug($msg);
                 echo $msg;
             }
@@ -161,6 +161,9 @@ class SpaceService
         }
         $space->save(true);
         $app->em->clear();
+        $msg = "¨¨\_(* _ *)_/¨¨ -  Processo de atualização dos espaços finalizado !  -  ¨¨\_(* _ *)_/¨¨";
+        $app->log->debug($msg);
+        echo $msg;
     }
 
     private function adicionarAcentos($frase)

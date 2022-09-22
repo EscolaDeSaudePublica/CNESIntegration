@@ -4,30 +4,32 @@ namespace CNESIntegration\Connection;
 
 use PDO;
 
+define('DRIVE', env('CNES_DW_DB_DRIVE'));
+define('HOST', env('CNES_DW_DB_HOST'));
+define('PORT', env('CNES_DW_DB_PORT'));
+define('DBNAME', env('CNES_DW_DB_NAME'));
+define('USERNAME', env('CNES_DW_DB_USERNAME'));
+define('PASSWORD', env('CNES_DW_DB_PASSWORD'));
+
 class Conn
 {
-    public static function getConnection()
+    private static $pdo;
+
+    private function __construct()
     {
-        try {
-            $drive = env('CNES_DW_DB_DRIVE');
-            $host = env('CNES_DW_DB_HOST');
-            $port = env('CNES_DW_DB_PORT');
-            $db = env('CNES_DW_DB_NAME');
-            $username = env('CNES_DW_DB_USERNAME');
-            $password = env('CNES_DW_DB_PASSWORD');
-            
-            $dns = "$drive:host=$host;port=$port;dbname=$db;";
+        //  
+    }
 
-	        $conn = new PDO($dns, $username, $password, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-            if (!$conn) {
-                echo "NOT Connected to the dw database successfully!";
+    public static function getInstance()
+    {
+        if (!isset(self::$pdo)) {
+            try {
+                $opcoes = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
+                self::$pdo = new PDO(DRIVE . ":host=" . HOST . "; port=" . PORT . "; dbname=" . DBNAME . ";", USERNAME, PASSWORD, $opcoes);
+            } catch (\PDOException $e) {
+                print "Erro: " . $e->getMessage();
             }
-
-            return $conn;
-        } catch (\Exception $e) {
-            echo $e->getMessage();
         }
+        return self::$pdo;
     }
 }

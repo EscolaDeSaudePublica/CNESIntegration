@@ -14,9 +14,8 @@ use MapasCulturais\Exceptions\PermissionDenied;
 
 class CNESIntegration extends \MapasCulturais\Controller
 {
-    public function GET_profissionais()
+    public function profissionais()
     {
-        Conn::getConnection();
 
         $profissionalService = new ProfissionalService();
         $profissionalService->atualizaProfissionais();
@@ -31,6 +30,8 @@ class CNESIntegration extends \MapasCulturais\Controller
         if ($app->user->email == 'desenvolvimento@esp.ce.gov.br'){
             $spaceService = new SpaceService();
             $spaceService->atualizarSpaces();
+
+            $this->profissionais();
         } else {
             throw new PermissionDenied($app->user, $this, '@control');
         }
