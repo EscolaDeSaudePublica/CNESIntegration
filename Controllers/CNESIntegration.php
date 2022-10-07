@@ -17,8 +17,17 @@ class CNESIntegration extends \MapasCulturais\Controller
     public function profissionais()
     {
 
-        $profissionalService = new ProfissionalService();
-        $profissionalService->atualizaProfissionais();
+        $app = App::i();
+
+        if ($app->user->is('guest')) $app->auth->requireAuthentication();
+
+        if ($app->user->email == 'desenvolvimento@esp.ce.gov.br'){
+            $profissionalService = new ProfissionalService();
+            $profissionalService->atualizaProfissionais();
+        } else {
+            throw new PermissionDenied($app->user, $this, '@control');
+        }
+        
     }
 
     public function GET_estabelecimentos()

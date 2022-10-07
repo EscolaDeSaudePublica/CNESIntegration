@@ -18,7 +18,8 @@ class SpaceService
 
         $app = App::i();
 
-        $userAdmin = $app->repo('User')->find(8);
+        $userAdmin = $app->repo('User')->findOneBy(['email' => 'desenvolvimento@esp.ce.gov.br']);
+        $userCnes = $app->repo('User')->findOneBy(['email' => 'cnes@esp.ce.gov.br']);
 
         $app->user = $userAdmin;
         $app->auth->authenticatedUser = $userAdmin;
@@ -78,7 +79,7 @@ class SpaceService
             }
 
             if ($spaceMeta) {
-                $msg = "Autalizado dados do espaços com o CNES  {$cnes} <br>";
+                $msg = "Atualizando dados do espaço com o CNES  {$cnes} <br>";
                 $app->log->debug($msg);
                 echo $msg;
                 $space = $spaceMeta->owner;
@@ -96,7 +97,7 @@ class SpaceService
             $space->longDescription = $razaoSocial;
             $space->createTimestamp = $dateTime;
             $space->status = 1;
-            $space->ownerId = 2;
+            $space->ownerId = $userCnes->id;
             $space->is_verified = false;
             $space->public = false;
             $space->type = $this->retornaIdTipoEstabelecimentoPorNome($tipoUnidade);

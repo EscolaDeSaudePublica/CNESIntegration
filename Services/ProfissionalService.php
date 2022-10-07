@@ -16,8 +16,8 @@ class ProfissionalService
 
         $app = App::i();
 
-        $userAdmin = $app->repo('User')->find(8);
-        $userCnes = $app->repo('User')->find(2);
+        $userAdmin = $app->repo('User')->findOneBy(['email' => 'desenvolvimento@esp.ce.gov.br']);
+        $userCnes = $app->repo('User')->findOneBy(['email' => 'cnes@esp.ce.gov.br']);
 
         $app->user = $userAdmin;
         $app->auth->authenticatedUser = $userAdmin;
@@ -25,10 +25,6 @@ class ProfissionalService
         $profissionalRepository = new ProfissionalRepository();
         $cnsS = $profissionalRepository->getAllCnsDistinctProfissionais();
 
-        //print_r($cnsS[0]['cns']);
-
-        // $cnsS = [980016287995799];
-        //$i = 0;
         foreach ($cnsS as $cns) {
             $cns = (int) $cns['cns'];
 
