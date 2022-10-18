@@ -2,11 +2,11 @@
 
 namespace CNESIntegration\Services;
 
-use CNESIntegration\Repositories\SpaceRepository;
+use CNESIntegration\Repositories\EstabelecimentoDWRepository;
 use MapasCulturais\App;
 use MapasCulturais\Types\GeoPoint;
 
-class SpaceService
+class EstabelecimentoService
 {
 
     public function atualizarSpaces()
@@ -26,7 +26,7 @@ class SpaceService
 
         $app->em->getConnection()->getConfiguration()->setSQLLogger(null);
 
-        $spaceRepository = new SpaceRepository();
+        $spaceRepository = new EstabelecimentoDWRepository();
         // retorna uma lista com todos os cnes da base do CNES
         $estabelecimentos = $spaceRepository->getAllEstabelecimentos();
 

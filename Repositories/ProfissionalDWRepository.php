@@ -4,12 +4,12 @@ namespace CNESIntegration\Repositories;
 
 use CNESIntegration\Connection\Conn;
 
-class ProfissionalRepository
+class ProfissionalDWRepository
 {
     public function getVinculos($filter)
     {
         $connection = Conn::getInstance();
-        $sql = "SELECT * FROM cnesprofissionais WHERE cns=?";
+        $sql = "SELECT cns, cbo, descricao_cbo, cnes, nome, sexo, cnpj FROM cnesprofissionais WHERE cns=?";
 
         $sth = $connection->prepare($sql );
         $sth->execute([$filter]);
@@ -21,7 +21,7 @@ class ProfissionalRepository
     public function getAllCnsDistinctProfissionais()
     {
         $connection = Conn::getInstance();
-        $sql = "SELECT DISTINCT cns FROM cnesprofissionais";
+        $sql = "SELECT DISTINCT cns FROM cnesprofissionais LIMIT 100";
 
         $sth = $connection->prepare($sql);
         $sth->execute();
@@ -29,5 +29,4 @@ class ProfissionalRepository
 
         return $result;
     }
-
 }

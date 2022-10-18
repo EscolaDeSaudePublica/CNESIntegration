@@ -4,18 +4,18 @@ namespace CNESIntegration\Connection;
 
 use PDO;
 
-class Conn
+class ConnMapa
 {
     private static $pdo;
 
     public static function getInstance()
     {
-        $drive = env('CNES_DW_DB_DRIVE');
-        $host = env('CNES_DW_DB_HOST');
-        $port = env('CNES_DW_DB_PORT');
-        $db = env('CNES_DW_DB_NAME');
-        $user = env('CNES_DW_DB_USERNAME');
-        $pass = env('CNES_DW_DB_PASSWORD');
+        $drive = 'pgsql';
+        $host = 'db';
+        $port = '5432';
+        $db = env('DB_NAME');
+        $user = env('POSTGRES_USER');
+        $pass = env('POSTGRES_PASSWORD');
 
         if (!isset(self::$pdo)) {
             try {

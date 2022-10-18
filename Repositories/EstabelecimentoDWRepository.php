@@ -6,7 +6,7 @@ use CNESIntegration\Connection\Conn;
 
 use MapasCulturais\App;
 
-class SpaceRepository
+class EstabelecimentoDWRepository
 {
 
     public function getEstabelecimentosByCNES($cnes)
