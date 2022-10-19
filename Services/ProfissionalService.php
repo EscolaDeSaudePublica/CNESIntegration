@@ -2,6 +2,7 @@
 
 namespace CNESIntegration\Services;
 
+use CNESIntegration\Connection\Conn;
 use CNESIntegration\Connection\ConnMapa;
 use CNESIntegration\Repositories\ProfissionalDWRepository;
 use MapasCulturais\App;
@@ -10,12 +11,10 @@ class ProfissionalService
 {
     public function atualizaProfissionais()
     {
-        ini_set('display_errors', true);
-        error_reporting(E_ALL);
-
         $start = microtime(true);
 
-        $conMapa = ConnMapa::getInstance();
+        $conn = new Conn();
+        $conMapa = $conn->getInstance(Conn::DATABASE_DW);
 
         $app = App::i();
 
@@ -52,7 +51,7 @@ class ProfissionalService
 
                 foreach ($relations as $relation) {
                     // realiza a limpeza dos relacionamentos dos agentes com os espaços
-                    $stmt= $conMapa->prepare("DELETE FROM agent_relation WHERE id = ?");
+                    $stmt = $conMapa->prepare("DELETE FROM agent_relation WHERE id = ?");
                     $stmt->execute([$relation['id']]);
                     $app->log->debug("Removendo vinculos do agente {$agentId}");
                 }
@@ -92,7 +91,7 @@ class ProfissionalService
                         $conMapa->query("INSERT INTO public.agent_relation (agent_id, object_type, object_id, type, has_control, create_timestamp, status, metadata) 
                         VALUES ({$agent->id}, 'MapasCulturais\Entities\Space', '{$space->id}', '{$cbo}', 'FALSE', '{$data}', 1, '{$jsonVinculo}')");
 
-                        $app->log->debug("Add vinculo existente do agent {$agent->id} e vinculando ao espaço {$space->id} com CBO: {$cbo}" . PHP_EOL);
+                        $app->log->debug("Adiciona vinculo EXISTENTE do agent {$agent->id} e vinculando ao espaço {$space->id} com CBO: {$cbo}" . PHP_EOL);
                     }
                 } else {
                     $descricao = "CNS: {$cns}";
@@ -107,7 +106,7 @@ class ProfissionalService
                         $conMapa->query("INSERT INTO public.agent_relation (agent_id, object_type, object_id, type, has_control, create_timestamp, status, metadata) 
                         VALUES ({$idAgent}, 'MapasCulturais\Entities\Space', '{$space->id}', '{$cbo}', 'FALSE', '{$data}', 1, '{$jsonVinculo}')");
 
-                        $app->log->debug("Add vinculo do novo agent {$idAgent} e vinculando ao espaço {$space->id} com CBO: {$cbo}<br>" . PHP_EOL);
+                        $app->log->debug("Adiciona vinculo do NOVO agent {$idAgent} e vinculando ao espaço {$space->id} com CBO: {$cbo}<br>" . PHP_EOL);
                     }
 
                 }

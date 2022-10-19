@@ -11,12 +11,9 @@ class EstabelecimentoService
 
     public function atualizarSpaces()
     {
-        ini_set('display_errors', true);
-        ini_set('max_execution_time', 0);
-        set_time_limit(60000);
-        error_reporting(E_ALL);
-
         $app = App::i();
+
+        $start = microtime(true);
 
         $userAdmin = $app->repo('User')->findOneBy(['email' => 'desenvolvimento@esp.ce.gov.br']);
         $userCnes = $app->repo('User')->findOneBy(['email' => 'cnes@esp.ce.gov.br']);
@@ -79,14 +76,8 @@ class EstabelecimentoService
             }
 
             if ($spaceMeta) {
-                $msg = "Atualizando dados do espaço com o CNES  {$cnes} <br>";
-                $app->log->debug($msg);
-                echo $msg;
                 $space = $spaceMeta->owner;
             } else {
-                $msg = "Criado um novo espaço com o CNES  {$cnes} <br>";
-                $app->log->debug($msg);
-                echo $msg;
                 $space = new \MapasCulturais\Entities\Space;
             }
             
@@ -138,7 +129,7 @@ class EstabelecimentoService
                 $space->setMetadata('instituicao_tipos_unidades', $tipoUnidade);
             }
 
-            if (!empty($telefone)) {
+            if (!empty($telefone) || $telefone != 'nan') {
                 $space->setMetadata('telefonePublico', $telefone);
             }
 
@@ -151,20 +142,23 @@ class EstabelecimentoService
             }
 
             $space->save();
+            $app->log->debug("Salva/atualiza espaço com o CNES {$cnes} | Espaço: {$space->id}");
             if (($cont % 50) === 0) {
                 $space->save(true); // Executes all updates.
                 $app->em->clear(); // Detaches all objects from Doctrine!
-                $msg = "Dados salvos com sucesso ! - ¨¨\_(* _ *)_/¨¨";
-                $app->log->debug($msg);
-                echo $msg;
+                $app->log->debug("Dados salvos com sucesso ! - ¨¨\_(* _ *)_/¨¨");
             }
-            $cont++;   
+            $cont++;
+
+            $time_elapsed_secs = microtime(true) - $start;
+
+            $app->log->debug("------------------------------" . $time_elapsed_secs . "------------------------------------");
+            $app->log->debug("Linha: " . $cont);
         }
         $space->save(true);
         $app->em->clear();
         $msg = "¨¨\_(* _ *)_/¨¨ -  Processo de atualização dos espaços finalizado !  -  ¨¨\_(* _ *)_/¨¨";
         $app->log->debug($msg);
-        echo $msg;
     }
 
     private function adicionarAcentos($frase)

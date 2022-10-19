@@ -16,7 +16,6 @@ class CNESIntegration extends \MapasCulturais\Controller
 {
     public function profissionais()
     {
-
         $app = App::i();
 
         if ($app->user->is('guest')) $app->auth->requireAuthentication();

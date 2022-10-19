@@ -9,6 +9,8 @@ ini_set('DEFAULT_SOCKET_TIMEOUT', '-1');
 ini_set('display_errors', true);
 error_reporting(E_ALL);
 
+set_time_limit(60000);
+
 use MapasCulturais\App;
 use MapasCulturais\i;
 
