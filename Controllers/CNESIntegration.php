@@ -39,7 +39,7 @@ class CNESIntegration extends \MapasCulturais\Controller
             $spaceService = new EstabelecimentoService();
             $spaceService->atualizarSpaces();
 
-            //$this->profissionais();
+            $this->profissionais();
         } else {
             throw new PermissionDenied($app->user, $this, '@control');
         }

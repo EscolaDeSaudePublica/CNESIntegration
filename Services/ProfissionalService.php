@@ -14,7 +14,7 @@ class ProfissionalService
         $start = microtime(true);
 
         $conn = new Conn();
-        $conMapa = $conn->getInstance(Conn::DATABASE_DW);
+        $conMapa = $conn->getInstance(Conn::DATABASE_MAPA);
 
         $app = App::i();
 
@@ -28,10 +28,11 @@ class ProfissionalService
         $cnsS = $profissionalRepository->getAllCnsDistinctProfissionais();
 
         $i = 1;
-        foreach ($cnsS as $cns) {
-            $cns = (int) $cns['cns'];
+        foreach ($cnsS as $cns_) {
+            $nome =  $cns_['nome'];
+            $cns = (int) $cns_['cns'];
+            
             $data = date('Y-m-d H:i:s');
-
 
             $sth = $conMapa->prepare("SELECT object_id FROM agent_meta WHERE value = '{$cns}'");
             $sth->execute();
@@ -54,7 +55,16 @@ class ProfissionalService
                     $stmt = $conMapa->prepare("DELETE FROM agent_relation WHERE id = ?");
                     $stmt->execute([$relation['id']]);
                     $app->log->debug("Removendo vinculos do agente {$agentId}");
+                    $this->logMsg("Removendo vinculos do agente {$agentId}");
                 }
+            } else {
+                $descricao = "CNS: {$cns}";
+                
+                $conMapa->exec("INSERT INTO public.agent (user_id, type, name,  create_timestamp, status, is_verified, public_location, update_timestamp, short_description) 
+                    VALUES ({$userCnes->id}, 1, '{$nome}', '{$data}', '1', 'FALSE', 'TRUE', '{$data}', '{$descricao}')");
+                $agentId  = $conMapa->lastInsertId();
+
+                $conMapa->exec("INSERT INTO public.agent_meta (object_id, key, value, id) VALUES ({$agentId }, 'cns', '{$cns}', (SELECT MAX(id)+1 FROM public.agent_meta))");
             }
 
             $vinculos = $profissionalRepository->getVinculos($cns);
@@ -62,7 +72,7 @@ class ProfissionalService
                 $space = null;
 
                 $cns = (int) $vinculo_['cns'];
-                $cbo = $vinculo_['cbo']. ' - ' . $vinculo_['descricao_cbo'];
+                $cbo = $vinculo_['cbo'] . ' - ' . $vinculo_['descricao_cbo'];
                 $cnes = $vinculo_['cnes'];
                 $nome = $vinculo_['nome'];
 
@@ -82,42 +92,36 @@ class ProfissionalService
                 }
 
                 // se existir o agente, então deve existir a rotina de atualização do profissional
-                if ($agentMeta) {
+                if ($agentId) {
                     if (!is_null($space)) {
-                        $sth = $conMapa->prepare("SELECT id FROM agent WHERE id = '{$agentMeta->object_id}'");
-                        $sth->execute();
-                        $agent = $sth->fetch(\PDO::FETCH_OBJ);
+                        // $sth = $conMapa->prepare("SELECT id FROM agent WHERE id = '{$agentId}'");
+                        // $sth->execute();
+                        // $agent = $sth->fetch(\PDO::FETCH_OBJ);
 
                         $conMapa->query("INSERT INTO public.agent_relation (agent_id, object_type, object_id, type, has_control, create_timestamp, status, metadata) 
-                        VALUES ({$agent->id}, 'MapasCulturais\Entities\Space', '{$space->id}', '{$cbo}', 'FALSE', '{$data}', 1, '{$jsonVinculo}')");
+                        VALUES ({$agentId}, 'MapasCulturais\Entities\Space', '{$space->id}', '{$cbo}', 'FALSE', '{$data}', 1, '{$jsonVinculo}')");
 
-                        $app->log->debug("Adiciona vinculo EXISTENTE do agent {$agent->id} e vinculando ao espaço {$space->id} com CBO: {$cbo}" . PHP_EOL);
+                        $app->log->debug("Adiciona vinculo EXISTENTE do agent {$agentId} e vinculando ao espaço {$space->id} com CBO: {$cbo}" . PHP_EOL);
+                        $this->logMsg("Adiciona vinculo EXISTENTE do agent {$agentId} e vinculando ao espaço {$space->id} com CBO: {$cbo}" . PHP_EOL);
                     }
-                } else {
-                    $descricao = "CNS: {$cns}";
-
-                    $conMapa->exec("INSERT INTO public.agent (user_id, type, name,  create_timestamp, status, is_verified, public_location, update_timestamp, short_description) 
-            VALUES ({$userCnes->id}, 1, '{$nome}', '{$data}', '1', 'FALSE', 'TRUE', '{$data}', '{$descricao}')");
-                    $idAgent = $conMapa->lastInsertId();
-
-                    $conMapa->exec("INSERT INTO public.agent_meta (object_id, key, value, id) VALUES ({$idAgent}, 'cns', '{$cns}', (SELECT MAX(id)+1 FROM public.agent_meta))");
-
-                    if (!is_null($space)) {
-                        $conMapa->query("INSERT INTO public.agent_relation (agent_id, object_type, object_id, type, has_control, create_timestamp, status, metadata) 
-                        VALUES ({$idAgent}, 'MapasCulturais\Entities\Space', '{$space->id}', '{$cbo}', 'FALSE', '{$data}', 1, '{$jsonVinculo}')");
-
-                        $app->log->debug("Adiciona vinculo do NOVO agent {$idAgent} e vinculando ao espaço {$space->id} com CBO: {$cbo}<br>" . PHP_EOL);
-                    }
-
-                }
+                } 
             }
 
             $time_elapsed_secs = microtime(true) - $start;
 
             $app->log->debug("------------------------------" . $time_elapsed_secs . "------------------------------------" . PHP_EOL);
+            $this->logMsg("------------------------------" . $time_elapsed_secs . "------------------------------------" . PHP_EOL);
             $app->log->debug("Linha: " . $i++ . PHP_EOL);
         }
     }
 
+    function logMsg($msg)
+    {
 
+        $file = '/var/www/html/protected/application/plugins/CNESIntegration/Logs/logs.txt';
+        $date = date('Y-m-d H:i:s');
+        $current = file_get_contents($file);
+        $current .= "{$date}: {$msg}\n";
+        file_put_contents($file, $current);
+    }
 }

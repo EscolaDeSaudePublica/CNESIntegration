@@ -142,11 +142,14 @@ class EstabelecimentoService
             }
 
             $space->save();
-            $app->log->debug("Salva/atualiza espaço com o CNES {$cnes} | Espaço: {$space->id}");
+            $msg = "Salva/atualiza espaço com o CNES {$cnes} | Espaço: {$space->id}";
+            $app->log->debug($msg);
+            $this->logMsg( $msg );
             if (($cont % 50) === 0) {
                 $space->save(true); // Executes all updates.
                 $app->em->clear(); // Detaches all objects from Doctrine!
                 $app->log->debug("Dados salvos com sucesso ! - ¨¨\_(* _ *)_/¨¨");
+                $this->logMsg("Dados salvos com sucesso ! - ¨¨\_(* _ *)_/¨¨");
             }
             $cont++;
 
@@ -154,10 +157,13 @@ class EstabelecimentoService
 
             $app->log->debug("------------------------------" . $time_elapsed_secs . "------------------------------------");
             $app->log->debug("Linha: " . $cont);
+            $this->logMsg("------------------------------" . $time_elapsed_secs . "------------------------------------");
+            $this->logMsg("Linha: " . $cont);
         }
         $space->save(true);
         $app->em->clear();
         $msg = "¨¨\_(* _ *)_/¨¨ -  Processo de atualização dos espaços finalizado !  -  ¨¨\_(* _ *)_/¨¨";
+        $this->logMsg( $msg );
         $app->log->debug($msg);
     }
 
@@ -197,5 +203,14 @@ class EstabelecimentoService
         $result = $conn->query($sql);
         $id = $result->fetchColumn();
         return $id;
+    }
+
+    function logMsg( $msg ) {
+
+        $file = '/var/www/html/protected/application/plugins/CNESIntegration/Logs/logs.txt';
+        $date = date( 'Y-m-d H:i:s' );
+        $current = file_get_contents($file);
+        $current .= "{$date}: {$msg}\n";
+        file_put_contents( $file, $current );
     }
 }
