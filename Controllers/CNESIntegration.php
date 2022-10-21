@@ -36,8 +36,8 @@ class CNESIntegration extends \MapasCulturais\Controller
         if ($app->user->is('guest')) $app->auth->requireAuthentication();
 
         if ($app->user->email == 'desenvolvimento@esp.ce.gov.br'){
-            //$spaceService = new EstabelecimentoService();
-            //$spaceService->atualizarSpaces();
+            $spaceService = new EstabelecimentoService();
+            $spaceService->atualizarSpaces();
 
             $this->profissionais();
         } else {
