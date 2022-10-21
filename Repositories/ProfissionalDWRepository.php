@@ -25,7 +25,7 @@ class ProfissionalDWRepository
 
     public function getAllCnsDistinctProfissionais()
     {
-        $sql = "SELECT DISTINCT cns, nome FROM cnesprofissionais";
+        $sql = "SELECT DISTINCT cns, nome FROM cnesprofissionais WHERE cns = '124945815930003'";
 
         $sth = $this->connection->prepare($sql);
         $sth->execute();

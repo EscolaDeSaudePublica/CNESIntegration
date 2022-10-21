@@ -4,6 +4,8 @@ namespace CNESIntegration\Services;
 
 use CNESIntegration\Connection\Conn;
 use CNESIntegration\Connection\ConnMapa;
+use CNESIntegration\Repositories\Mapa\AgentRepository;
+use CNESIntegration\Repositories\Mapa\SpaceRepository;
 use CNESIntegration\Repositories\ProfissionalDWRepository;
 use MapasCulturais\App;
 
@@ -27,44 +29,47 @@ class ProfissionalService
         $profissionalRepository = new ProfissionalDWRepository();
         $cnsS = $profissionalRepository->getAllCnsDistinctProfissionais();
 
+        $agentRepository = new AgentRepository();
+        $spaceRepository = new SpaceRepository();
+
         $i = 1;
         foreach ($cnsS as $cns_) {
             $nome =  $cns_['nome'];
             $cns = (int) $cns_['cns'];
-            
             $data = date('Y-m-d H:i:s');
+            $descricao = "CNS: {$cns}";
 
-            $sth = $conMapa->prepare("SELECT object_id FROM agent_meta WHERE value = '{$cns}'");
-            $sth->execute();
-            $agentMeta = $sth->fetch(\PDO::FETCH_OBJ);
+            $agentMeta = $agentRepository->agentMetaPorCns($cns);
 
             // se existir o agente, então deve existir a rotina de atualização do profissional
             if ($agentMeta) {
                 $agentId = $agentMeta->object_id;
 
                 // retorna as relações com espaços do agente
-                $conn = $app->em->getConnection();
-                $relations = $conn->fetchAll("
-                    SELECT id FROM agent_relation 
-                    WHERE agent_id = {$agentId} 
-                    AND object_type = 'MapasCulturais\Entities\Space'
-                ");
+                $relations = $agentRepository->relationsPorAgent($agentId);
 
                 foreach ($relations as $relation) {
                     // realiza a limpeza dos relacionamentos dos agentes com os espaços
-                    $stmt = $conMapa->prepare("DELETE FROM agent_relation WHERE id = ?");
-                    $stmt->execute([$relation['id']]);
-                    $app->log->debug("Removendo vinculos do agente {$agentId}");
-                    $this->logMsg("Removendo vinculos do agente {$agentId}");
+                    if ($agentRepository->deleteRelation($relation->id)) {
+                        $app->log->debug("Removendo vinculos do agente {$agentId}");
+                        $this->logMsg("Removendo vinculos do agente {$agentId}");
+                    }
                 }
             } else {
-                $descricao = "CNS: {$cns}";
-                
-                $conMapa->exec("INSERT INTO public.agent (user_id, type, name,  create_timestamp, status, is_verified, public_location, update_timestamp, short_description) 
-                    VALUES ({$userCnes->id}, 1, '{$nome}', '{$data}', '1', 'FALSE', 'TRUE', '{$data}', '{$descricao}')");
-                $agentId  = $conMapa->lastInsertId();
+                $agent = [];
+                $agent['userCnesId'] = $userCnes->id;
+                $agent['nome'] = $nome;
+                $agent['data'] = $data;
+                $agent['descricao'] = $descricao;
 
-                $conMapa->exec("INSERT INTO public.agent_meta (object_id, key, value, id) VALUES ({$agentId }, 'cns', '{$cns}', (SELECT MAX(id)+1 FROM public.agent_meta))");
+                $agentId = $agentRepository->novoAgent($agent);
+
+                if ($agentId) {
+                    $agentMeta = [];
+                    $agentMeta['agentId'] = $agentId;
+                    $agentMeta['cns'] = $cns;
+                    $agentRepository->novoAgentMeta($agentMeta);
+                }
             }
 
             $vinculos = $profissionalRepository->getVinculos($cns);
@@ -81,25 +86,23 @@ class ProfissionalService
                 unset($vinculo_['cnpj']);
                 $jsonVinculo = json_encode($vinculo_);
 
-                $sth = $conMapa->prepare("SELECT object_id FROM space_meta WHERE value = '{$cnes}'");
-                $sth->execute();
-                $spaceMeta = $sth->fetch(\PDO::FETCH_OBJ);
+                $spaceMeta = $spaceRepository->spaceMetaPorCnes($cnes);
 
                 if ($spaceMeta) {
-                    $sth = $conMapa->prepare("SELECT id FROM space WHERE id = '{$spaceMeta->object_id}'");
-                    $sth->execute();
-                    $space = $sth->fetch(\PDO::FETCH_OBJ);;
+                    $space = $spaceRepository->spacePorId($spaceMeta->object_id);
                 }
 
                 // se existir o agente, então deve existir a rotina de atualização do profissional
                 if ($agentId) {
                     if (!is_null($space)) {
-                        // $sth = $conMapa->prepare("SELECT id FROM agent WHERE id = '{$agentId}'");
-                        // $sth->execute();
-                        // $agent = $sth->fetch(\PDO::FETCH_OBJ);
+                        $agentRelation = [];
+                        $agentRelation['agentId'] = $agentId;
+                        $agentRelation['spaceId'] = $space->id;
+                        $agentRelation['cbo'] = $cbo;
+                        $agentRelation['data'] = $data;
+                        $agentRelation['jsonVinculo'] = $jsonVinculo;
 
-                        $conMapa->query("INSERT INTO public.agent_relation (agent_id, object_type, object_id, type, has_control, create_timestamp, status, metadata) 
-                        VALUES ({$agentId}, 'MapasCulturais\Entities\Space', '{$space->id}', '{$cbo}', 'FALSE', '{$data}', 1, '{$jsonVinculo}')");
+                        $agentRepository->novoAgentRelation($agentRelation);
 
                         $app->log->debug("Adiciona vinculo EXISTENTE do agent {$agentId} e vinculando ao espaço {$space->id} com CBO: {$cbo}" . PHP_EOL);
                         $this->logMsg("Adiciona vinculo EXISTENTE do agent {$agentId} e vinculando ao espaço {$space->id} com CBO: {$cbo}" . PHP_EOL);
