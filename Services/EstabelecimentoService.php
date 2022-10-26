@@ -3,6 +3,7 @@
 namespace CNESIntegration\Services;
 
 use CNESIntegration\Repositories\EstabelecimentoDWRepository;
+use CNESIntegration\Repositories\Mapa\SpaceRepository;
 use MapasCulturais\App;
 use MapasCulturais\Types\GeoPoint;
 
@@ -23,9 +24,11 @@ class EstabelecimentoService
 
         $app->em->getConnection()->getConfiguration()->setSQLLogger(null);
 
-        $spaceRepository = new EstabelecimentoDWRepository();
+        $estabelecimentoDWRepository = new EstabelecimentoDWRepository();
         // retorna uma lista com todos os cnes da base do CNES
-        $estabelecimentos = $spaceRepository->getAllEstabelecimentos();
+        $estabelecimentos = $estabelecimentoDWRepository->getAllEstabelecimentos();
+
+        $spacesNewsSeals = [];
 
         $cont = 1;
         foreach ($estabelecimentos as $estabelecimento) {
@@ -57,7 +60,7 @@ class EstabelecimentoService
             $competenciaArray = explode('-', $competencia);
             $competenciaData = $competenciaArray[1] . '/' . $competenciaArray[0];
 
-            $servicosEstabelecimento = $spaceRepository->getServicosPorEstabelecimento($cnes);
+            $servicosEstabelecimento = $estabelecimentoDWRepository->getServicosPorEstabelecimento($cnes);
 
             $servicosArray = [];
             foreach ($servicosEstabelecimento as $serv) {
@@ -141,16 +144,17 @@ class EstabelecimentoService
                 $space->setMetadata('instituicao_servicos', implode(', ', $servicosArray));
             }
 
-            $space->save();
+            $space->save(true);
+
+            if (!$spaceMeta) {
+                $spacesNewsSeals[] = $space->id;
+            }
+
+            $app->em->clear();
             $msg = "Salva/atualiza espaço com o CNES {$cnes} | Espaço: {$space->id}";
             $app->log->debug($msg);
             $this->logMsg( $msg );
-            if (($cont % 50) === 0) {
-                $space->save(true); // Executes all updates.
-                $app->em->clear(); // Detaches all objects from Doctrine!
-                $app->log->debug("Dados salvos com sucesso ! - ¨¨\_(* _ *)_/¨¨");
-                $this->logMsg("Dados salvos com sucesso ! - ¨¨\_(* _ *)_/¨¨");
-            }
+
             $cont++;
 
             $time_elapsed_secs = microtime(true) - $start;
@@ -160,11 +164,20 @@ class EstabelecimentoService
             $this->logMsg("------------------------------" . $time_elapsed_secs . "------------------------------------");
             $this->logMsg("Linha: " . $cont);
         }
-        $space->save(true);
+
         $app->em->clear();
+
+        $spaceRepository = new SpaceRepository();
+        foreach ($spacesNewsSeals as $spaceId) {
+            $spaceRepository->salvarSelo($spaceId, $userCnes->profile->id);
+            $app->log->debug("Aplicando SELO para: " . $spaceId);
+            $this->logMsg("Aplicando SELO para: " . $spaceId);
+        }
+
         $msg = "¨¨\_(* _ *)_/¨¨ -  Processo de atualização dos espaços finalizado !  -  ¨¨\_(* _ *)_/¨¨";
         $this->logMsg( $msg );
         $app->log->debug($msg);
+        $app->log->debug(print_r($spacesNewsSeals));
     }
 
     private function adicionarAcentos($frase)
@@ -174,23 +187,6 @@ class EstabelecimentoService
         $arraySemAcento = ['ORGAOS', 'CAPTACAO', 'NOTIFICACAO', 'PUBLICA', 'LABORATORIO', 'GESTAO', 'ATENCAO', 'BASICA', 'DOENCA', 'CRONICA', 'FAMILIA', 'ESTRATEGIA', 'COMUNITARIOS', 'LOGISTICA',  'IMUNOBIOLOGICOS', 'REGULACAO', 'ACOES', 'SERVICOS', 'SERVICO', 'HANSENIASE', 'MOVEL', 'URGENCIAS', 'DIAGNOSTICO', 'LABORATORIO', 'CLINICO', 'DISPENSACAO', 'ORTESES', 'PROTESES', 'REABILITACAO', 'PRATICAS', 'URGENCIA', 'EMERGENCIA', 'VIGILANCIA', 'BIOLOGICOS', 'FARMACIA', 'GRAFICOS', 'DINAMICOS', 'METODOS', 'PATOLOGICA', 'INTERMEDIARIOS', 'TORACICA', 'PRE-NATAL', 'IMUNIZACAO', 'CONSULTORIO', 'VIOLENCIA', 'SITUACAO', 'POPULACOES', 'INDIGENAS', 'ASSISTENCIA', 'COMISSOES', 'COMITES', 'SAUDE', 'BASICA', 'AREA', 'PRE-HOSPITALAR', 'NIVEL'];
 
         return str_replace($arraySemAcento, $arrayComAcento, $frase);
-    }
-
-    private function salvarSelos($conMap, $idSpace, $idAgent)
-    {
-
-        $sql = "SELECT MAX(id)+1 FROM public.seal_relation";
-        $maxSealRelation = $conMap->query($sql);
-        $id = $maxSealRelation->fetchColumn();
-
-        $id = !empty($id) ? $id : 1;
-
-        $dataHora = date('Y-m-d H:i:s');
-        $sqlInsertSeal = "INSERT INTO public.seal_relation 
-                    (id, seal_id, object_id, create_timestamp, status, object_type, agent_id, validate_date, renovation_request) 
-                    VALUES ({$id} ,'2', '" . $idSpace . "', '{$dataHora}' , '1' , 'MapasCulturais\Entities\Space' , {$idAgent},
-                    '2029-12-08 00:00:00' , true)";
-        $conMap->exec($sqlInsertSeal);
     }
 
     private function retornaIdTipoEstabelecimentoPorNome($tipoNome)
