@@ -68,4 +68,22 @@ class AgentRepository
         $this->connection->exec("INSERT INTO public.agent_relation (agent_id, object_type, object_id, type, has_control, create_timestamp, status, metadata) 
                         VALUES ({$agentId}, 'MapasCulturais\Entities\Space', '{$spaceId}', '{$cbo}', 'FALSE', '{$data}', 1, '{$jsonVinculo}')");
     }
+
+    public function salvarTermsSaude($agentId)
+    {
+        $saudeid = 250;
+        $sth = $this->connection->prepare("SELECT object_id FROM public.term_relation WHERE term_id = {$saudeid} AND object_type = 'MapasCulturais\Entities\Agent' AND object_id = {$agentId}");
+        $sth->execute();
+        $object_id = $sth->fetchColumn();
+
+        if (!$object_id) {
+            $sqlInsertMeta = "INSERT INTO public.term_relation (term_id, object_type, object_id, id) VALUES (
+                                                                $saudeid, 
+                                                                'MapasCulturais\Entities\Agent', 
+                                                                $agentId,  
+                                                                (SELECT MAX(id)+1 FROM public.term_relation)
+                                                    )";
+            $this->connection->exec($sqlInsertMeta);
+        }
+    }
 }

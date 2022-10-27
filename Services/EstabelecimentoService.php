@@ -25,6 +25,7 @@ class EstabelecimentoService
         $app->em->getConnection()->getConfiguration()->setSQLLogger(null);
 
         $estabelecimentoDWRepository = new EstabelecimentoDWRepository();
+        $spaceRepository = new SpaceRepository();
         // retorna uma lista com todos os cnes da base do CNES
         $estabelecimentos = $estabelecimentoDWRepository->getAllEstabelecimentos();
 
@@ -69,7 +70,7 @@ class EstabelecimentoService
                 }
             }
 
-            $tipoUnidadeComAcento = $this->adicionarAcentos($tipoUnidade);
+            $tipoUnidadeComAcento = $spaceRepository->adicionarAcentos($tipoUnidade);
             $term = $app->repo('Term')->findOneBy(['term' => $tipoUnidadeComAcento]);
             if (empty($term)) {
                 $term = new \MapasCulturais\Entities\Term;
@@ -94,7 +95,7 @@ class EstabelecimentoService
             $space->ownerId = $userCnes->id;
             $space->is_verified = false;
             $space->public = false;
-            $space->type = $this->retornaIdTipoEstabelecimentoPorNome($tipoUnidade);
+            $space->type = $spaceRepository->retornaIdTipoEstabelecimentoPorNome($tipoUnidade);
 
 
             if (!empty($cep)) {
@@ -146,6 +147,8 @@ class EstabelecimentoService
 
             $space->save(true);
 
+            $spaceRepository->salvarTermsSaude($space->id);
+
             if (!$spaceMeta) {
                 $spacesNewsSeals[] = $space->id;
             }
@@ -167,7 +170,6 @@ class EstabelecimentoService
 
         $app->em->clear();
 
-        $spaceRepository = new SpaceRepository();
         foreach ($spacesNewsSeals as $spaceId) {
             $spaceRepository->salvarSelo($spaceId, $userCnes->profile->id);
             $app->log->debug("Aplicando SELO para: " . $spaceId);
@@ -177,28 +179,6 @@ class EstabelecimentoService
         $msg = "¨¨\_(* _ *)_/¨¨ -  Processo de atualização dos espaços finalizado !  -  ¨¨\_(* _ *)_/¨¨";
         $this->logMsg( $msg );
         $app->log->debug($msg);
-        $app->log->debug(print_r($spacesNewsSeals));
-    }
-
-    private function adicionarAcentos($frase)
-    {
-        $arrayComAcento = ['ORGÃOS', 'CAPTAÇÃO', 'NOTIFICAÇÃO', 'PÚBLICA', 'LABORATÓRIO', 'GESTÃO', 'ATENÇÃO', 'BÁSICA', 'DOENÇA', 'CRÔNICA', 'FAMÍLIA',  'ESTRATÉGIA', 'COMUNITÁRIOS', 'LOGÍSTICA',  'IMUNOBIOLÓGICOS', 'REGULAÇÃO', 'AÇÕES', 'SERVIÇOS', 'SERVIÇO', 'HANSENÍASE', 'MÓVEL', 'URGÊNCIAS', 'DIAGNÓSTICO', 'LABORATÓRIO', 'CLÍNICO', 'DISPENSAÇÃO', 'ÓRTESES', 'PRÓTESES', 'REABILITAÇÃO', 'PRÁTICAS', 'URGÊNCIA', 'EMERGÊNCIA', 'VIGILÂNCIA', 'BIOLÓGICOS', 'FARMÁCIA', 'GRÁFICOS', 'DINÂMICOS', 'MÉTODOS', 'PATOLÓGICA', 'INTERMEDIÁRIOS', 'TORÁCICA', 'PRÉ-NATAL', 'IMUNIZAÇÃO', 'CONSULTÓRIO', 'VIOLÊNCIA', 'SITUAÇÃO', 'POPULAÇÕES', 'INDÍGENAS', 'ASSISTÊNCIA', 'COMISSÕES', 'COMITÊS', 'SAÚDE', 'BÁSICA', 'ÁREA', 'PRÉ-HOSPITALAR', 'NÍVEL'];
-
-        $arraySemAcento = ['ORGAOS', 'CAPTACAO', 'NOTIFICACAO', 'PUBLICA', 'LABORATORIO', 'GESTAO', 'ATENCAO', 'BASICA', 'DOENCA', 'CRONICA', 'FAMILIA', 'ESTRATEGIA', 'COMUNITARIOS', 'LOGISTICA',  'IMUNOBIOLOGICOS', 'REGULACAO', 'ACOES', 'SERVICOS', 'SERVICO', 'HANSENIASE', 'MOVEL', 'URGENCIAS', 'DIAGNOSTICO', 'LABORATORIO', 'CLINICO', 'DISPENSACAO', 'ORTESES', 'PROTESES', 'REABILITACAO', 'PRATICAS', 'URGENCIA', 'EMERGENCIA', 'VIGILANCIA', 'BIOLOGICOS', 'FARMACIA', 'GRAFICOS', 'DINAMICOS', 'METODOS', 'PATOLOGICA', 'INTERMEDIARIOS', 'TORACICA', 'PRE-NATAL', 'IMUNIZACAO', 'CONSULTORIO', 'VIOLENCIA', 'SITUACAO', 'POPULACOES', 'INDIGENAS', 'ASSISTENCIA', 'COMISSOES', 'COMITES', 'SAUDE', 'BASICA', 'AREA', 'PRE-HOSPITALAR', 'NIVEL'];
-
-        return str_replace($arraySemAcento, $arrayComAcento, $frase);
-    }
-
-    private function retornaIdTipoEstabelecimentoPorNome($tipoNome)
-    {
-        $app = App::i();
-        $conn = $app->em->getConnection();
-        $tipoNome = $this->adicionarAcentos($tipoNome);
-
-        $sql = "SELECT id FROM public.term WHERE taxonomy='instituicao_tipos_unidades' AND term='{$tipoNome}'";
-        $result = $conn->query($sql);
-        $id = $result->fetchColumn();
-        return $id;
     }
 
     function logMsg( $msg ) {

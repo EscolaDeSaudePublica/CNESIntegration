@@ -72,7 +72,10 @@ class ProfissionalService
                 }
             }
 
+            $agentRepository->salvarTermsSaude($agentId);
+
             $vinculos = $profissionalRepository->getVinculos($cns);
+
             foreach ($vinculos as $vinculo_) {
                 $space = null;
 
