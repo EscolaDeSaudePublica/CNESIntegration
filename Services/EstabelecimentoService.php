@@ -70,21 +70,11 @@ class EstabelecimentoService
                 }
             }
 
-            $tipoUnidadeComAcento = $spaceRepository->adicionarAcentos($tipoUnidade);
-            $term = $app->repo('Term')->findOneBy(['term' => $tipoUnidadeComAcento]);
-            if (empty($term)) {
-                $term = new \MapasCulturais\Entities\Term;
-                $term->taxonomy = 'instituicao_tipos_unidades';
-                $term->term = $tipoUnidadeComAcento;
-                $term->save(true);
-            }
-
             if ($spaceMeta) {
                 $space = $spaceMeta->owner;
             } else {
                 $space = new \MapasCulturais\Entities\Space;
             }
-            
             
             $space->setLocation($geo);
             $space->name = $nomeFantasia;
@@ -96,7 +86,6 @@ class EstabelecimentoService
             $space->is_verified = false;
             $space->public = false;
             $space->type = $spaceRepository->retornaIdTipoEstabelecimentoPorNome($tipoUnidade);
-
 
             if (!empty($cep)) {
                 $space->setMetadata('En_CEP', $cep);

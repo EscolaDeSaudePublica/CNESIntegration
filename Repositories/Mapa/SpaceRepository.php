@@ -68,6 +68,15 @@ class SpaceRepository
         $sql = "SELECT id FROM public.term WHERE taxonomy='instituicao_tipos_unidades' AND term='{$tipoNome}'";
         $result = $conn->query($sql);
         $id = $result->fetchColumn();
+
+        if (!empty($id)) {
+            return $id;
+        }
+
+        $sql = "SELECT id FROM public.term WHERE taxonomy='instituicao_tipos_unidades' AND term='ESTABELECIMENTO DE SAÚDE'";
+        $result = $conn->query($sql);
+        $id = $result->fetchColumn();
+
         return $id;
     }
 
