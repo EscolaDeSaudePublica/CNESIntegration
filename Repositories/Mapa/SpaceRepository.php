@@ -81,6 +81,23 @@ class SpaceRepository
         return $id;
     }
 
+    public function retornaStringTipoEstabelecimentoPorNome($tipoNome)
+    {
+        $app = App::i();
+        $conn = $app->em->getConnection();
+        $tipoNome = $this->adicionarAcentos($tipoNome);
+
+        $sql = "SELECT term FROM public.term WHERE taxonomy='instituicao_tipos_unidades' AND term='{$tipoNome}'";
+        $result = $conn->query($sql);
+        $term = $result->fetchColumn();
+
+        if (!empty($term)) {
+            return $term;
+        }
+
+        return 'ESTABELECIMENTO DE SAÚDE';
+    }
+
     public function adicionarAcentos($frase)
     {
         $arrayComAcento = ['ORGÃOS', 'CAPTAÇÃO', 'NOTIFICAÇÃO', 'PÚBLICA', 'LABORATÓRIO', 'GESTÃO', 'ATENÇÃO', 'BÁSICA', 'DOENÇA', 'CRÔNICA', 'FAMÍLIA',  'ESTRATÉGIA', 'COMUNITÁRIOS', 'LOGÍSTICA',  'IMUNOBIOLÓGICOS', 'REGULAÇÃO', 'AÇÕES', 'SERVIÇOS', 'SERVIÇO', 'HANSENÍASE', 'MÓVEL', 'URGÊNCIAS', 'DIAGNÓSTICO', 'LABORATÓRIO', 'CLÍNICO', 'DISPENSAÇÃO', 'ÓRTESES', 'PRÓTESES', 'REABILITAÇÃO', 'PRÁTICAS', 'URGÊNCIA', 'EMERGÊNCIA', 'VIGILÂNCIA', 'BIOLÓGICOS', 'FARMÁCIA', 'GRÁFICOS', 'DINÂMICOS', 'MÉTODOS', 'PATOLÓGICA', 'INTERMEDIÁRIOS', 'TORÁCICA', 'PRÉ-NATAL', 'IMUNIZAÇÃO', 'CONSULTÓRIO', 'VIOLÊNCIA', 'SITUAÇÃO', 'POPULAÇÕES', 'INDÍGENAS', 'ASSISTÊNCIA', 'COMISSÕES', 'COMITÊS', 'SAÚDE', 'BÁSICA', 'ÁREA', 'PRÉ-HOSPITALAR', 'NÍVEL'];
