@@ -56,6 +56,7 @@ class SpaceRepository
                                                                 (SELECT MAX(id)+1 FROM public.term_relation)
                                                     )";
             $this->connection->exec($sqlInsertMeta);
+            $this->connection->exec("SELECT setval('term_relation_id_seq', COALESCE((SELECT MAX(id)+1 FROM public.term_relation), 1), false);");
         }
     }
 
