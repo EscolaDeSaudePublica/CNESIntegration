@@ -39,7 +39,7 @@ class EstabelecimentoDWRepository
 
     public function getServicosPorEstabelecimento($cnes)
     {
-        $sql = "SELECT ds_servico_especializado FROM estabelecimentos WHERE co_cnes = :cnes";
+        $sql = "SELECT DISTINCT ds_servico_especializado FROM estabelecimentos WHERE co_cnes = :cnes";
 
         $sth = $this->connection->prepare($sql);
         $sth->execute([
