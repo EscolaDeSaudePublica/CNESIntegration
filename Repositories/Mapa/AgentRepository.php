@@ -54,7 +54,7 @@ class AgentRepository
         $agentId = $agentMeta['agentId'];
         $cns = $agentMeta['cns'];
 
-        $agentMeta = $this->connection->exec("INSERT INTO public.agent_meta (object_id, key, value, id) VALUES ({$agentId}, 'cns', '{$cns}', (SELECT MAX(id)+1 FROM public.agent_meta))");
+        $agentMeta = $this->connection->exec("INSERT INTO public.agent_meta (object_id, key, value, id) VALUES ({$agentId}, 'cns', '{$cns}', (select nextval('agent_meta_id_seq')))");
         $this->connection->exec("SELECT setval('agent_meta_id_seq', COALESCE((SELECT MAX(id)+1 FROM public.agent_meta), 1), false)");
 
         return $agentMeta;
