@@ -56,6 +56,7 @@ class SpaceRepository
                                                                 (SELECT MAX(id)+1 FROM public.term_relation)
                                                     )";
             $this->connection->exec($sqlInsertMeta);
+            $this->connection->exec("SELECT setval('term_relation_id_seq', COALESCE((SELECT MAX(id)+1 FROM public.term_relation), 1), false);");
         }
     }
 
@@ -68,7 +69,33 @@ class SpaceRepository
         $sql = "SELECT id FROM public.term WHERE taxonomy='instituicao_tipos_unidades' AND term='{$tipoNome}'";
         $result = $conn->query($sql);
         $id = $result->fetchColumn();
+
+        if (!empty($id)) {
+            return $id;
+        }
+
+        $sql = "SELECT id FROM public.term WHERE taxonomy='instituicao_tipos_unidades' AND term='ESTABELECIMENTO DE SAÚDE'";
+        $result = $conn->query($sql);
+        $id = $result->fetchColumn();
+
         return $id;
+    }
+
+    public function retornaStringTipoEstabelecimentoPorNome($tipoNome)
+    {
+        $app = App::i();
+        $conn = $app->em->getConnection();
+        $tipoNome = $this->adicionarAcentos($tipoNome);
+
+        $sql = "SELECT term FROM public.term WHERE taxonomy='instituicao_tipos_unidades' AND term='{$tipoNome}'";
+        $result = $conn->query($sql);
+        $term = $result->fetchColumn();
+
+        if (!empty($term)) {
+            return $term;
+        }
+
+        return 'ESTABELECIMENTO DE SAÚDE';
     }
 
     public function adicionarAcentos($frase)

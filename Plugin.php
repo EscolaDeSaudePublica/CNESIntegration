@@ -7,7 +7,7 @@ ini_set('MAX_INPUT_TIME', '-1');
 ini_set('DEFAULT_SOCKET_TIMEOUT', '-1');
 
 ini_set('display_errors', true);
-error_reporting(E_ALL);
+error_reporting(E_ERROR);
 
 set_time_limit(60000);
 
@@ -28,6 +28,21 @@ class Plugin extends \MapasCulturais\Plugin
 
         $this->registerMetadataProfissionais();
         $this->registerMetadataEstabelecimentos();
+    }
+
+    public function runMigrationCNES()
+    {
+        $app = App::i();
+
+        $userAdmin = $app->repo('User')->findOneBy(['email' => 'desenvolvimento@esp.ce.gov.br']);
+        $userCnes = $app->repo('User')->findOneBy(['email' => 'cnes@esp.ce.gov.br']);
+
+        $app->user = $userAdmin;
+        $app->auth->authenticatedUser = $userAdmin;
+
+        $controller = new Controllers\CNESIntegration();
+        $controller->GET_estabelecimentos();
+
     }
 
     private function registerMetadataProfissionais()
