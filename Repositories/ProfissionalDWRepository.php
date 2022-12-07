@@ -25,10 +25,11 @@ class ProfissionalDWRepository
 
     public function getAllCnsDistinctProfissionais()
     {
-        $sql = "SELECT DISTINCT cns, nome FROM cnesprofissionais";
+        $sql = "SELECT DISTINCT a.cns, a.nome, b.cpf FROM cnesprofissionais a inner join cns_prof_cpf b on a.cns  = b.cns";
 
         $sth = $this->connection->prepare($sql);
         $sth->execute();
         return $sth->fetchAll();
     }
+
 }

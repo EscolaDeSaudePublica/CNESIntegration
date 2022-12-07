@@ -36,15 +36,24 @@ class ProfissionalService
         foreach ($cnsS as $cns_) {
             $nome =  $cns_['nome'];
             $cns = (int) $cns_['cns'];
+            $cpf =  $cns_['cpf'];
             $data = date('Y-m-d H:i:s');
             $descricao = "CNS: {$cns}";
 
-            $agentMeta = $agentRepository->agentMetaPorCns($cns);
+            $agentMeta = $agentRepository->agentMetaPorCnsCpf($cns, $cpf);
 
             // se existir o agente, então deve existir a rotina de atualização do profissional
             if ($agentMeta) {
                 $agentId = $agentMeta->object_id;
 
+                if (!$agentRepository->existeDocumentoNoAgentMeta($cpf)) {
+                    $agentRepository->inserirDocumentoNoAgentMeta($agentMeta, $cpf);
+                }
+
+                if (!$agentRepository->existeCNSNoAgentMeta($cns)) {
+                    $agentRepository->inserirCNSNoAgentMeta($agentMeta, $cns);
+                }
+                
                 // retorna as relações com espaços do agente
                 $relations = $agentRepository->relationsPorAgent($agentId);
 
@@ -68,6 +77,13 @@ class ProfissionalService
                     $agentMeta = [];
                     $agentMeta['agentId'] = $agentId;
                     $agentMeta['cns'] = $cns;
+
+                    if (!$agentRepository->existeDocumentoNoAgentMeta($cpf)) {
+                        if ($cpf != '' && $cpf != null && $cpf != NAN) {
+                            $agentMeta['documento'] = $cpf;
+                        }
+                    }
+
                     $agentRepository->novoAgentMeta($agentMeta);
                 }
             }
