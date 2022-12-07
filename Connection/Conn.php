@@ -25,8 +25,8 @@ class Conn
             $host = 'db';
             $port = '5432';
             $db = env('DB_NAME');
-            $user = env('POSTGRES_USER');
-            $pass = env('POSTGRES_PASSWORD');
+            $user = env('DB_USER');
+            $pass = env('DB_PASS');
         }
 
         try {
