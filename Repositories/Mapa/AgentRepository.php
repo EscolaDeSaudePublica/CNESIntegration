@@ -35,6 +35,13 @@ class AgentRepository
         return $sth->fetch(\PDO::FETCH_OBJ);
     }
 
+    public function allCNSAgentMeta()
+    {
+        $sth = $this->connection->prepare("SELECT object_id, value FROM public.agent_meta WHERE key = 'cns'");
+        $sth->execute();
+        return $sth->fetchAll(\PDO::FETCH_OBJ);
+    }
+
     public function relationsPorAgent($agentId)
     {
         $sth = $this->connection->prepare(
@@ -43,6 +50,20 @@ class AgentRepository
                     AND object_type = 'MapasCulturais\Entities\Space' and type <> 'group-admin'");
         $sth->execute();
         return $sth->fetchAll(\PDO::FETCH_OBJ);
+    }
+
+    public function agentResponsavel($objectid)
+    {
+        $sth = $this->connection->prepare("SELECT user_id FROM public.agent WHERE id = ?");
+        $sth->execute([$objectid]);
+        return $sth->fetchAll(\PDO::FETCH_OBJ);
+    }
+
+
+    public function desativarAgent($objectid)
+    {
+        $stmt = $this->connection->prepare("UPDATE public.agent SET status = -10 WHERE id=?");
+        return $stmt->execute([$objectid]);
     }
 
     public function deleteRelation($id)

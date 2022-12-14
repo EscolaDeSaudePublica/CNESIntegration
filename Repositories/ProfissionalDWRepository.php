@@ -32,4 +32,13 @@ class ProfissionalDWRepository
         return $sth->fetchAll();
     }
 
+    public function getExisteCnsProfissionais($cns)
+    {
+        $sql = "SELECT DISTINCT cns FROM cnesprofissionais WHERE cns=?";
+
+        $sth = $this->connection->prepare($sql);
+        $sth->execute([$cns]);
+        return $sth->fetchAll();
+    }
+
 }
