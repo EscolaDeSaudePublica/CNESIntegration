@@ -38,7 +38,9 @@ class SpaceRepository
         $sqlInsertSeal = "INSERT INTO public.seal_relation 
                     (id, seal_id, object_id, create_timestamp, status, object_type, agent_id, validate_date, renovation_request) 
                     VALUES ((SELECT MAX(id)+1 FROM public.seal_relation) , {$sealId}, '" . $spaceId . "', '{$dataHora}' , '1' , 'MapasCulturais\Entities\Space' , {$agentId}, '2029-12-08 00:00:00' , true)";
-        return $this->connection->exec($sqlInsertSeal);
+
+        $this->connection->exec($sqlInsertSeal);
+        $this->connection->exec("SELECT setval('seal_relation_id_seq', COALESCE((SELECT MAX(id)+1 FROM public.seal_relation), 1), false);");
     }
 
     public function salvarTermsSaude($spaceId)
