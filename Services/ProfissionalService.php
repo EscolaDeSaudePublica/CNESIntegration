@@ -32,18 +32,47 @@ class ProfissionalService
         $agentRepository = new AgentRepository();
         $spaceRepository = new SpaceRepository();
 
+        $allCnsMapa = $agentRepository->allCNSAgentMeta();
+
+        foreach ($allCnsMapa as $cnsMapa) {
+
+            if (!$profissionalRepository->getExisteCnsProfissionais($cnsMapa->value)) {
+                $user_id = $agentRepository->agentResponsavel($cnsMapa->object_id);
+                if ($user_id[0]->user_id) {
+                    $agentRepository->desativarAgent($cnsMapa->object_id);
+                    $app->log->debug("Agent {$cnsMapa->object_id} desativado com CNS: {$cnsMapa->value}" . PHP_EOL);
+                }
+            }
+            $time_elapsed_secs = microtime(true) - $start;
+            $app->log->debug("------------------------------" . $time_elapsed_secs . "------------------------------------" . PHP_EOL);
+            $this->logMsg("Agent {$cnsMapa->object_id} desativado com CNS: {$cnsMapa->value}" . PHP_EOL);
+            $this->logMsg("------------------------------" . $time_elapsed_secs . "------------------------------------" . PHP_EOL);
+        }
+
+        die;
         $i = 1;
         foreach ($cnsS as $cns_) {
+
             $nome =  $cns_['nome'];
             $cns = (int) $cns_['cns'];
+            $cpf =  $this->inserirMascaraCpf($cns_['cpf']);
             $data = date('Y-m-d H:i:s');
             $descricao = "CNS: {$cns}";
+            $app->log->debug("CPF: " . $cpf . PHP_EOL);
 
-            $agentMeta = $agentRepository->agentMetaPorCns($cns);
+            $agentMeta = $agentRepository->agentMetaPorCnsCpf($cns, $cpf);
 
             // se existir o agente, então deve existir a rotina de atualização do profissional
             if ($agentMeta) {
                 $agentId = $agentMeta->object_id;
+
+                if (!$agentRepository->existeDocumentoNoAgentMeta($cpf)) {
+                    $agentRepository->inserirDocumentoNoAgentMeta($agentMeta, $cpf);
+                }
+
+                if (!$agentRepository->existeCNSNoAgentMeta($cns)) {
+                    $agentRepository->inserirCNSNoAgentMeta($agentMeta, $cns);
+                }
 
                 // retorna as relações com espaços do agente
                 $relations = $agentRepository->relationsPorAgent($agentId);
@@ -68,6 +97,13 @@ class ProfissionalService
                     $agentMeta = [];
                     $agentMeta['agentId'] = $agentId;
                     $agentMeta['cns'] = $cns;
+
+                    if (!$agentRepository->existeDocumentoNoAgentMeta($cpf)) {
+                        if ($cpf != '' && $cpf != null && $cpf != NAN) {
+                            $agentMeta['documento'] = $cpf;
+                        }
+                    }
+
                     $agentRepository->novoAgentMeta($agentMeta);
                 }
             }
@@ -110,7 +146,7 @@ class ProfissionalService
                         $app->log->debug("Adiciona vinculo EXISTENTE do agent {$agentId} e vinculando ao espaço {$space->id} com CBO: {$cbo}" . PHP_EOL);
                         $this->logMsg("Adiciona vinculo EXISTENTE do agent {$agentId} e vinculando ao espaço {$space->id} com CBO: {$cbo}" . PHP_EOL);
                     }
-                } 
+                }
             }
 
             $time_elapsed_secs = microtime(true) - $start;
@@ -129,5 +165,24 @@ class ProfissionalService
         $current = file_get_contents($file);
         $current .= "{$date}: {$msg}\n";
         file_put_contents($file, $current);
+    }
+
+    function inserirMascaraCpf($cpf)
+    {
+        $cpf_ = preg_replace("/[^0-9]/", "", $cpf);
+        $qtd = strlen($cpf_);
+
+        if ($qtd >= 11) {
+
+            if ($qtd === 11) {
+
+                $cpfFormatado = substr($cpf_, 0, 3) . '.' .
+                    substr($cpf_, 3, 3) . '.' .
+                    substr($cpf_, 6, 3) . '-' .
+                    substr($cpf_, 9, 2);
+            }
+
+            return $cpfFormatado;
+        }
     }
 }

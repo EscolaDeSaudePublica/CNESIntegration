@@ -14,11 +14,32 @@ class AgentRepository
         $this->connection = $conn->getInstance(Conn::DATABASE_MAPA);
     }
 
-    public function agentMetaPorCns($cns)
+    public function agentMetaPorCnsCpf($cns, $cpf)
     {
-        $sth = $this->connection->prepare("SELECT object_id FROM agent_meta WHERE value = '{$cns}'");
+        $sth = $this->connection->prepare("SELECT object_id FROM agent_meta WHERE value = '{$cns}' or value = '{$cpf}'");
         $sth->execute();
         return $sth->fetch(\PDO::FETCH_OBJ);
+    }
+
+    public function existeDocumentoNoAgentMeta($cpf)
+    {
+        $sth = $this->connection->prepare("SELECT object_id FROM public.agent_meta WHERE value = '{$cpf}'");
+        $sth->execute();
+        return $sth->fetch(\PDO::FETCH_OBJ);
+    }
+
+    public function existeCNSNoAgentMeta($cns)
+    {
+        $sth = $this->connection->prepare("SELECT object_id FROM public.agent_meta WHERE value = '{$cns}'");
+        $sth->execute();
+        return $sth->fetch(\PDO::FETCH_OBJ);
+    }
+
+    public function allCNSAgentMeta()
+    {
+        $sth = $this->connection->prepare("SELECT object_id, value FROM public.agent_meta WHERE key = 'cns'");
+        $sth->execute();
+        return $sth->fetchAll(\PDO::FETCH_OBJ);
     }
 
     public function relationsPorAgent($agentId)
@@ -26,9 +47,23 @@ class AgentRepository
         $sth = $this->connection->prepare(
             "SELECT id FROM agent_relation 
                     WHERE agent_id = {$agentId} 
-                    AND object_type = 'MapasCulturais\Entities\Space'");
+                    AND object_type = 'MapasCulturais\Entities\Space' and type <> 'group-admin'");
         $sth->execute();
         return $sth->fetchAll(\PDO::FETCH_OBJ);
+    }
+
+    public function agentResponsavel($objectid)
+    {
+        $sth = $this->connection->prepare("SELECT user_id FROM public.agent WHERE id = ?");
+        $sth->execute([$objectid]);
+        return $sth->fetchAll(\PDO::FETCH_OBJ);
+    }
+
+
+    public function desativarAgent($objectid)
+    {
+        $stmt = $this->connection->prepare("UPDATE public.agent SET status = -10 WHERE id=?");
+        return $stmt->execute([$objectid]);
     }
 
     public function deleteRelation($id)
@@ -58,6 +93,30 @@ class AgentRepository
         $this->connection->exec("SELECT setval('agent_meta_id_seq', COALESCE((SELECT MAX(id)+1 FROM public.agent_meta), 1), false)");
 
         return $agentMeta;
+    }
+
+    public function inserirDocumentoNoAgentMeta($agentMeta, $cpf)
+    {
+        $object_id = $agentMeta->object_id;
+        $documento = $cpf;
+
+        $agentMeta = $this->connection->exec("INSERT INTO public.agent_meta (object_id, key, value, id) VALUES ({$object_id}, 'documento', '{$documento}', (select nextval('agent_meta_id_seq')))");
+        $this->connection->exec("SELECT setval('agent_meta_id_seq', COALESCE((SELECT MAX(id)+1 FROM public.agent_meta), 1), false)");
+
+        return $agentMeta;
+
+    }
+
+    public function inserirCNSNoAgentMeta($agentMeta, $cns)
+    {
+        $object_id = $agentMeta->object_id;
+        $cns = $cns;
+
+        $agentMeta = $this->connection->exec("INSERT INTO public.agent_meta (object_id, key, value, id) VALUES ({$object_id}, 'cns', '{$cns}', (select nextval('agent_meta_id_seq')))");
+        $this->connection->exec("SELECT setval('agent_meta_id_seq', COALESCE((SELECT MAX(id)+1 FROM public.agent_meta), 1), false)");
+
+        return $agentMeta;
+
     }
 
     public function novoAgentRelation($agentRelation)
